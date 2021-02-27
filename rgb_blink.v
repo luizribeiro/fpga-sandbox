@@ -8,6 +8,8 @@ module rgb_blink (
 
   localparam N = 27;
   reg [N:0] counter;
+  wire a = counter[N-3];
+  wire b = counter[N-4];
 
   always @(posedge clk) begin
     counter <= counter + 1'b1;
@@ -15,9 +17,9 @@ module rgb_blink (
 
   SB_RGBA_DRV rgb_driver (
     .RGBLEDEN(1'b1),
-    .RGB0PWM(counter[N-2] & counter[N-3]),
-    .RGB1PWM(counter[N-2] & ~counter[N-3]),
-    .RGB2PWM(~counter[N-2] & counter[N-3]),
+    .RGB0PWM(a & b),
+    .RGB1PWM(a & ~b),
+    .RGB2PWM(~a & b),
     .CURREN(1'b1),
     .RGB0(led_green),
     .RGB1(led_blue),
