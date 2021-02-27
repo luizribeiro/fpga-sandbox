@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "fpga-sandbox"
+version = "0.0.1"
+description = "My FPGA sandbox with apio"
+authors = [
+  "Luiz Ribeiro <luizribeiro@gmail.com>",
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+apio = "0.6.0"
+
+[build-system]
+requires = ["poetry>=1.0.10"]
+build-backend = "poetry.masonry.api"
