@@ -1,3 +1,6 @@
 *.dblite
 hardware.*
 .hdl_checker
+*.out
+*.vcd
+.DS_Store
