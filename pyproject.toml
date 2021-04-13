@@ -9,7 +9,7 @@ authors = [
 [tool.poetry.dependencies]
 python = "^3.7"
 apio = "0.6.0"
-hdl_checker = "0.7.2"
+hdl_checker = "0.7.3"
 
 [build-system]
 requires = ["poetry>=1.0.10"]
