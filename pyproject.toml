@@ -8,7 +8,7 @@ authors = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-apio = "0.6.0"
+apio = "0.7.6"
 hdl_checker = "0.7.3"
 
 [build-system]
