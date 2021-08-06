@@ -97,10 +97,8 @@ module riscv (
         end
         `LOAD: begin
           case (funct3)
-            /*
-            `LB:
-            `LH:
-            */
+            `LB: regs[rd] = {{24{mem[regs[rs1]][7]}}, mem[regs[rs1]][7:0]};
+            `LH: regs[rd] = {{16{mem[regs[rs1]][15]}}, mem[regs[rs1]][15:0]};
             `LW: regs[rd] = mem[regs[rs1]];
             `LBU: regs[rd] = {24'b0, mem[regs[rs1]][7:0]};
             `LHU: regs[rd] = {16'b0, mem[regs[rs1]][15:0]};
