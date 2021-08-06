@@ -17,6 +17,7 @@ module riscv (
   reg [`WORD:0] next_pc;
 
   reg [`WORD:0] cur;
+  reg [`WORD:0] mem_val;
 
   // common for all (or most) instructions
   wire [6:0] opcode = cur[6:0];
@@ -66,8 +67,14 @@ module riscv (
       stage <= stage + 1;
     end
 
-    // execute
+    // decode (actually just memory access rn)
     if (stage == 1) begin
+      if (opcode == `LOAD) mem_val <= mem[regs[rs1]];
+      stage <= stage + 1;
+    end
+
+    // execute
+    if (stage == 2) begin
       case (opcode)
         `LUI: regs[rd] <= {u_imm, 12'b0};
         `AUIPC: regs[rd] <= pc + {u_imm, 12'b0};
@@ -97,11 +104,11 @@ module riscv (
         end
         `LOAD: begin
           case (funct3)
-            `LB: regs[rd] = {{24{mem[regs[rs1]][7]}}, mem[regs[rs1]][7:0]};
-            `LH: regs[rd] = {{16{mem[regs[rs1]][15]}}, mem[regs[rs1]][15:0]};
-            `LW: regs[rd] = mem[regs[rs1]];
-            `LBU: regs[rd] = {24'b0, mem[regs[rs1]][7:0]};
-            `LHU: regs[rd] = {16'b0, mem[regs[rs1]][15:0]};
+            `LB: regs[rd] = {{24{mem_val[7]}}, mem_val[7:0]};
+            `LH: regs[rd] = {{16{mem_val[15]}}, mem_val[15:0]};
+            `LW: regs[rd] = mem_val;
+            `LBU: regs[rd] = {24'b0, mem_val[7:0]};
+            `LHU: regs[rd] = {16'b0, mem_val[15:0]};
           endcase
         end
         `STORE: begin
@@ -162,7 +169,7 @@ module riscv (
     end
 
     // finish (not sure if I need?)
-    if (stage == 2) begin
+    if (stage == 3) begin
       pc <= next_pc;
       stage <= 0;
     end
