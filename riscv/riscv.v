@@ -74,7 +74,12 @@ module riscv (
     // decode (actually just memory access rn)
     if (stage == 1) begin
       if (opcode == `LOAD)
-        mem_val <= {mem[regs[rs1]], mem[regs[rs1]+1], mem[regs[rs1]+2], mem[regs[rs1]+3]};
+        mem_val <= {
+          mem[regs[rs1] + $signed(i_imm)],
+          mem[regs[rs1] + $signed(i_imm) + 1],
+          mem[regs[rs1] + $signed(i_imm) + 2],
+          mem[regs[rs1] + $signed(i_imm) + 3]
+        };
       stage <= stage + 1;
     end
 
