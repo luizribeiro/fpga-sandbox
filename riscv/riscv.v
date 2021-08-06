@@ -5,7 +5,9 @@ module riscv (
   input wire clk,
   output wire [`MAX_GPIO:0] gpio
 );
-  reg [7:0] mem [4095:0]; // 4096 bytes
+  // FIXME: memory access sucks right now and this isn't really working as
+  // a memory
+  reg [7:0] mem [128:0]; // 128 bytes
   reg [`WORD:0] regs [`LAST_REG:0];
   reg [`MAX_GPIO:0] gpio_regs;
   reg [`WORD:0] pc;
@@ -56,7 +58,7 @@ module riscv (
 
     set_memory(0, {20'h1f, 5'd0, `LUI}); // lui r0, 0x1f
     set_memory(1, {20'hf1, 5'd1, `LUI}); // lui r1, 0xf1
-    set_memory(32, {12'h00, 5'h00, 3'b0, 5'd2, `JALR}); // jalr r2, (0x00 + 0x00)
+    set_memory(31, {12'h00, 5'h00, 3'b0, 5'd2, `JALR}); // jalr r2, (0x00 + 0x00)
   end
 
   //assign gpio = gpio_regs;
@@ -123,11 +125,17 @@ module riscv (
         end
         `STORE: begin
           case (funct3)
-            /*
-            `SB:
-            `SH:
-            `SW:
-            */
+            `SB: mem[regs[rs1] + $signed(s_imm)] <= regs[rs2][7:0];
+            `SH: begin
+              mem[regs[rs1] + $signed(s_imm)] <= regs[rs2][15:8];
+              mem[regs[rs1] + $signed(s_imm) + 1] <= regs[rs2][7:0];
+            end
+            `SW: begin
+              mem[regs[rs1] + $signed(s_imm)] <= regs[rs2][31:24];
+              mem[regs[rs1] + $signed(s_imm) + 1] <= regs[rs2][23:16];
+              mem[regs[rs1] + $signed(s_imm) + 2] <= regs[rs2][15:8];
+              mem[regs[rs1] + $signed(s_imm) + 3] <= regs[rs2][7:0];
+            end
           endcase
         end
         `OP_IMM: begin
