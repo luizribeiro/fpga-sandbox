@@ -41,12 +41,12 @@ module riscv (
   // J-type instructions
   wire signed [20:0] j_imm = {cur[31], cur[19:12], cur[20], cur[30:21], 1'b0};
 
-  integer step;
+  integer stage;
   integer i;
 
   initial begin
     pc = 0;
-    step = 0;
+    stage = 0;
 
     for (i = 0; i <= 1023; i = i + 1) mem[i] = 'b0;
     mem[0] = {20'h1f, 5'd0, `LUI}; // lui r0, 0x1f
@@ -60,14 +60,14 @@ module riscv (
 
   always @(posedge clk) begin
     // fetch
-    if (step == 0) begin
+    if (stage == 0) begin
       next_pc <= pc + 1; // FIXME: +4 (memory is byte-addressable)
       cur <= mem[pc];
-      step <= step + 1;
+      stage <= stage + 1;
     end
 
     // execute
-    if (step == 1) begin
+    if (stage == 1) begin
       case (opcode)
         `LUI: regs[rd] <= {u_imm, 12'b0};
         `AUIPC: regs[rd] <= pc + {u_imm, 12'b0};
@@ -158,13 +158,13 @@ module riscv (
           endcase
         end
       endcase
-      step <= step + 1;
+      stage <= stage + 1;
     end
 
     // finish (not sure if I need?)
-    if (step == 2) begin
+    if (stage == 2) begin
       pc <= next_pc;
-      step <= 0;
+      stage <= 0;
     end
   end
 endmodule
