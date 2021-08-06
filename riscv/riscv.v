@@ -100,10 +100,10 @@ module riscv (
             /*
             `LB:
             `LH:
-            `LW:
-            `LBU:
-            `LHU:
             */
+            `LW: regs[rd] = mem[regs[rs1]];
+            `LBU: regs[rd] = {24'b0, mem[regs[rs1]][7:0]};
+            `LHU: regs[rd] = {16'b0, mem[regs[rs1]][15:0]};
           endcase
         end
         `STORE: begin
