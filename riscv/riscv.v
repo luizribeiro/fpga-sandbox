@@ -1,6 +1,11 @@
 `include "config.vh"
 `include "instructions.vh"
 
+/*
+* TODO: memory is currently word-addressable, but it should be
+* byte-addressable
+*/
+
 module riscv (
   input wire clk,
   output wire [`MAX_GPIO:0] gpio
@@ -9,6 +14,7 @@ module riscv (
   reg [`WORD:0] regs [`LAST_REG:0];
   reg [`MAX_GPIO:0] gpio_regs;
   reg [`WORD:0] pc;
+  reg [`WORD:0] next_pc;
 
   reg [`WORD:0] cur;
 
@@ -23,6 +29,7 @@ module riscv (
   wire [11:0] i_imm = cur[31:20];
   wire [4:0] rs1 = cur[19:15];
   wire [2:0] funct3 = cur[14:12];
+  wire [11:0] funct12 = cur[31:20];
 
   // R-type instructions
   wire [6:0] funct7 = cur[31:25];
@@ -54,6 +61,7 @@ module riscv (
   always @(posedge clk) begin
     // fetch
     if (step == 0) begin
+      next_pc <= pc + 1; // FIXME: +4 (memory is byte-addressable)
       cur <= mem[pc];
       step <= step + 1;
     end
@@ -64,58 +72,100 @@ module riscv (
         `LUI: regs[rd] <= {u_imm, 12'b0};
         `AUIPC: regs[rd] <= pc + {u_imm, 12'b0};
         `JAL: begin
-          pc <= pc + j_imm - 1; // -1 because it will get incremented on the next step
-          regs[rd] <= (pc + j_imm) + 1; // uhmm this is supposedly + 4
+          next_pc <= pc + j_imm;
+          regs[rd] <= pc + j_imm;
         end
         `JALR: begin
-          pc <= regs[rs1] + $signed(i_imm) - 1;
-          regs[rd] <= (regs[rs1] + $signed(i_imm)) + 1; // +4?
+          next_pc <= regs[rs1] + $signed(i_imm);
+          regs[rd] <= (regs[rs1] + $signed(i_imm));
         end
-        /*
-        `BEQ:
-        `BNE:
-        `BLT:
-        `BGE:
-        `BLTU:
-        `BGEU:
-        `LB:
-        `LH:
-        `LW:
-        `LBU:
-        `LHU:
-        `SB:
-        `SH:
-        `SW:
-        `ADDI:
-        `SLTI:
-        `SLTIU:
-        `XORI:
-        `ORI:
-        `ANDI:
-        `SLLI:
-        `SRLI:
-        `SRAI:
-        `ADD:
-        `SUB:
-        `SLL:
-        `SLT:
-        `SLTU:
-        `XOR:
-        `SRL:
-        `SRA:
-        `OR:
-        `AND:
-        `FENCE:
-        `ECALL:
-        `EBREAK:
-        */
+        `BRANCH: begin
+          case (funct3)
+            `BEQ: next_pc <= (regs[rs1] == regs[rs2]
+              ? pc + $signed(j_imm) : next_pc);
+            `BNE: next_pc <= (regs[rs1] != regs[rs2]
+              ? pc + $signed(j_imm) : next_pc);
+            `BLT: next_pc <= ($signed(regs[rs1]) < $signed(regs[rs2])
+              ? pc + $signed(j_imm) : next_pc);
+            `BGE: next_pc <= ($signed(regs[rs1]) > $signed(regs[rs2])
+              ? pc + $signed(j_imm) : next_pc);
+            `BLTU: next_pc <= (regs[rs1] < regs[rs2]
+              ? pc + $signed(j_imm) : next_pc);
+            `BGEU: next_pc <= (regs[rs1] > regs[rs2] ?
+              pc + $signed(j_imm) : next_pc);
+          endcase
+        end
+        `LOAD: begin
+          case (funct3)
+            /*
+            `LB:
+            `LH:
+            `LW:
+            `LBU:
+            `LHU:
+            */
+          endcase
+        end
+        `STORE: begin
+          case (funct3)
+            /*
+            `SB:
+            `SH:
+            `SW:
+            */
+          endcase
+        end
+        `OP_IMM: begin
+          case (funct3)
+            /*
+            `ADDI:
+            `SLTI:
+            `SLTIU:
+            `XORI:
+            `ORI:
+            `ANDI:
+            `SLLI:
+            `SRLI:
+            `SRAI:
+            */
+          endcase
+        end
+        `OP: begin
+          /*
+          `ADD:
+          `SUB:
+          `SLL:
+          `SLT:
+          `SLTU:
+          `XOR:
+          `SRL:
+          `SRA:
+          `OR:
+          `AND:
+          */
+        end
+        `MISC_MEM: begin
+          case (funct3)
+            /*
+            `FENCE:
+            */
+          endcase
+        end
+        `SYSTEM: begin
+          case (funct12)
+            /*
+            `ECALL:
+            `EBREAK:
+            */
+          endcase
+        end
       endcase
       step <= step + 1;
     end
 
     // finish (not sure if I need?)
     if (step == 2) begin
-      pc <= pc + 'b1;
+      pc <= next_pc;
       step <= 0;
     end
   end
