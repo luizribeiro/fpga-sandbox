@@ -1,16 +1,11 @@
 `include "config.vh"
 `include "instructions.vh"
 
-/*
-* TODO: memory is currently word-addressable, but it should be
-* byte-addressable
-*/
-
 module riscv (
   input wire clk,
   output wire [`MAX_GPIO:0] gpio
 );
-  reg [`WORD:0] mem [1023:0]; // 4096 bytes
+  reg [7:0] mem [4095:0]; // 4096 bytes
   reg [`WORD:0] regs [`LAST_REG:0];
   reg [`MAX_GPIO:0] gpio_regs;
   reg [`WORD:0] pc;
@@ -44,32 +39,42 @@ module riscv (
 
   integer stage;
   integer i;
+  integer j;
+
+  task set_memory;
+    input integer address;
+    input reg[`WORD:0] value;
+    begin
+      for(j = 0; j < 4; j++)
+        mem[4*address + j] = value[31-j*8:24-j*8];
+    end
+  endtask
 
   initial begin
     pc = 0;
     stage = 0;
 
-    for (i = 0; i <= 1023; i = i + 1) mem[i] = 'b0;
-    mem[0] = {20'h1f, 5'd0, `LUI}; // lui r0, 0x1f
-    mem[1] = {20'hf1, 5'd1, `LUI}; // lui r1, 0xf1
-    mem[32] = {12'h00, 5'h00, 3'b0, 5'd2, `JALR}; // jalr r2, (0x00 + 0x00)
+    set_memory(0, {20'h1f, 5'd0, `LUI}); // lui r0, 0x1f
+    set_memory(1, {20'hf1, 5'd1, `LUI}); // lui r1, 0xf1
+    set_memory(32, {12'h00, 5'h00, 3'b0, 5'd2, `JALR}); // jalr r2, (0x00 + 0x00)
   end
 
   //assign gpio = gpio_regs;
-  assign gpio = pc[7:0];
+  assign gpio = pc[9:2];
   //assign gpio = regs[0][19:12];
 
   always @(posedge clk) begin
     // fetch
     if (stage == 0) begin
-      next_pc <= pc + 1; // FIXME: +4 (memory is byte-addressable)
-      cur <= mem[pc];
+      next_pc <= pc + 4;
+      cur <= {mem[pc], mem[pc+1], mem[pc+2], mem[pc+3]};
       stage <= stage + 1;
     end
 
     // decode (actually just memory access rn)
     if (stage == 1) begin
-      if (opcode == `LOAD) mem_val <= mem[regs[rs1]];
+      if (opcode == `LOAD)
+        mem_val <= {mem[regs[rs1]], mem[regs[rs1]+1], mem[regs[rs1]+2], mem[regs[rs1]+3]};
       stage <= stage + 1;
     end
 
