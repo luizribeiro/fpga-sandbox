@@ -6,7 +6,7 @@ module tb();
 
   initial begin
     $dumpfile("top_tb.vcd");
-    $dumpvars(0, t);
+    $dumpvars(0, cpu);
   end
 
   reg clk = 1'b0;
@@ -19,12 +19,9 @@ module tb();
   wire d6;
   wire d7;
 
-  riscv t (
+  riscv cpu (
     .clk(clk),
-    .d0(d0),
-    .d1(d1),
-    .d2(d2),
-    .d3(d3)
+    .gpio({d0, d1, d2, d3, d4, d5, d6, d7})
   );
 
   always begin
