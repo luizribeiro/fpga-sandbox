@@ -1,3 +1,4 @@
+/* verilator lint_off CASEINCOMPLETE */
 `include "config.vh"
 `include "instructions.vh"
 
@@ -20,7 +21,7 @@ module riscv (
   wire [11:0] i_imm = inst[31:20];
   wire [11:0] s_imm = {inst[31:25], inst[11:7]};
   wire [20:0] j_imm = {inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
-  rom program (
+  rom prog (
     .clk(clk),
     .addr(pc),
     .data(inst)
@@ -42,7 +43,7 @@ module riscv (
   reg [`WORD:0] a;
   reg [`WORD:0] b;
   reg [`WORD:0] res;
-  reg [`WORD:0] dest;
+  reg [7:0] dest;
   reg [`WORD:0] branch_addr;
 
   // TODO: do something more useful with GPIO
@@ -54,7 +55,7 @@ module riscv (
     pc = 'h0;
     mem_write = 3'b0;
     mem_addr = 'h0;
-    dest <= 'hff;
+    dest = 'hff;
     stage = 'b1;
   end
 
@@ -69,38 +70,38 @@ module riscv (
         `LUI: begin
           a <= {u_imm, 12'b0};
           b <= 'b0;
-          dest <= rd;
+          dest <= {3'b0, rd};
         end
         `AUIPC: begin
           a <= pc;
           b <= {u_imm, 12'b0};
-          dest <= rd;
+          dest <= {3'b0, rd};
         end
         `JAL: begin
           a <= pc;
-          b <= j_imm;
-          dest <= rd;
+          b <= {11'b0, j_imm};
+          dest <= {3'b0, rd};
         end
         `JALR: begin
           a <= regs[rs1];
-          b <= $signed(i_imm);
-          dest <= rd;
+          b <= $signed({{20{i_imm[11]}}, i_imm});
+          dest <= {3'b0, rd};
         end
         `BRANCH: begin
           a <= regs[rs1];
           b <= regs[rs2];
-          branch_addr = pc + $signed(j_imm);
+          branch_addr = pc + $signed({{11{j_imm[20]}}, j_imm});
           dest <= 'hff;
         end
         `LOAD: begin
           a <= regs[rs1];
-          b <= $signed(i_imm);
-          dest <= rd;
-          mem_write <= 1'b0;
+          b <= $signed({{20{i_imm[11]}}, i_imm});
+          dest <= {3'b0, rd};
+          mem_write <= 3'b0;
         end
         `STORE: begin
           a <= regs[rs1];
-          b <= $signed(s_imm);
+          b <= $signed({{20{s_imm[11]}}, s_imm});
           dest <= 'hff;
           mem_in <= regs[rs2];
         end
@@ -109,7 +110,7 @@ module riscv (
             `ADDI: begin
               a <= {{20{i_imm[11]}}, i_imm[11:0]};
               b <= regs[rs1];
-              dest <= rd;
+              dest <= {3'b0, rd};
             end
             // `SLTI:
             // `SLTIU:
@@ -129,35 +130,42 @@ module riscv (
     if (stage[2]) begin
       case (opcode)
         // alu
-        `LUI, `AUIPC, `JAL, `ADDI: res <= a + b;
+        `LUI, `AUIPC, `JAL: res <= a + b;
         `BRANCH: begin
           case (funct3)
-            `BEQ: res <= a == b;
-            `BNE: res <= a != b;
-            `BLT: res <= $signed(a) < $signed(b);
-            `BGE: res <= $signed(a) > $signed(b);
-            `BLTU: res <= a < b;
-            `BGEU: res <= a > b;
+            `BEQ: res <= {31'b0, a == b};
+            `BNE: res <= {31'b0, a != b};
+            `BLT: res <= {31'b0, $signed(a) < $signed(b)};
+            `BGE: res <= {31'b0, $signed(a) > $signed(b)};
+            `BLTU: res <= {31'b0, a < b};
+            `BGEU: res <= {31'b0, a > b};
           endcase
         end
         `LOAD: begin
           mem_addr <= a + b;
-          mem_write <= 1'b0;
+          mem_write <= 3'b0;
         end
         `STORE: begin
           mem_addr <= a + b;
           case (funct3)
             `SB: begin
-              res <= mem_val[7:0];
+              res <= {24'b0, mem_val[7:0]};
               mem_write <= 3'b100;
             end
             `SH: begin
-              res <= {mem_val[15:8], mem_val[7:0]};
+              res <= {16'b0, mem_val[15:8], mem_val[7:0]};
               mem_write <= 3'b010;
             end
             `SW: begin
               res <= mem_val;
               mem_write <= 3'b001;
+            end
+          endcase
+        end
+        `OP_IMM: begin
+          case (funct3)
+            `ADDI: begin
+              res <= a + b;
             end
           endcase
         end
@@ -186,28 +194,28 @@ module riscv (
       case (opcode)
         `JAL, `JALR: begin
           pc <= res;
-          regs[dest] <= res;
+          regs[dest[4:0]] <= res;
         end
         `AUIPC, `LUI: begin
-          regs[dest] <= res;
+          regs[dest[4:0]] <= res;
           pc <= pc + 1;
         end
         `BRANCH: pc <= res[0] ? branch_addr : pc + 1;
         `LOAD: begin
-          regs[dest] <= res;
+          regs[dest[4:0]] <= res;
           pc <= pc + 1;
         end
         `STORE: begin
-          mem_write <= 1'b0;
+          mem_write <= 3'b0;
           pc <= pc + 1;
         end
         `OP_IMM: begin
           case (funct3)
             `ADDI: begin
-              regs[dest] <= res;
-              pc <= pc + 1;
+              regs[dest[4:0]] <= res;
             end
           endcase
+          pc <= pc + 1;
         end
       endcase
     end else stage <= stage << 1;
