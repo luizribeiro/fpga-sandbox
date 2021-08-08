@@ -5,146 +5,115 @@ module riscv (
   input wire clk,
   output wire [`MAX_GPIO:0] gpio
 );
-  // FIXME: memory access sucks right now and this isn't really working as
-  // a memory
-  reg [7:0] mem [128:0]; // 128 bytes
   reg [`WORD:0] regs [`LAST_REG:0];
-  reg [`MAX_GPIO:0] gpio_regs;
+
   reg [`WORD:0] pc;
-  reg [`WORD:0] next_pc;
+  reg [`WORD:0] inst;
+  wire [6:0] opcode = inst[6:0];
+  wire [4:0] rd = inst[11:7];
+  wire [4:0] rs1 = inst[19:15];
+  wire [4:0] rs2 = inst[24:20];
+  wire [2:0] funct3 = inst[14:12];
+  wire [6:0] funct7 = inst[31:25];
+  wire [11:0] funct12 = inst[31:20];
+  wire [19:0] u_imm = inst[31:12];
+  wire [11:0] i_imm = inst[31:20];
+  wire [11:0] s_imm = {inst[31:25], inst[11:7]};
+  wire [20:0] j_imm = {inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
+  rom program (
+    .clk(clk),
+    .addr(pc),
+    .data(inst)
+  );
 
-  reg [`WORD:0] cur;
+  reg [`WORD:0] mem_addr;
   reg [`WORD:0] mem_val;
+  reg [`WORD:0] mem_in;
+  reg [2:0] mem_write;
+  ram memory (
+    .clk(clk),
+    .write_enable(mem_write),
+    .addr(mem_addr),
+    .data_in(res),
+    .data_out(mem_val)
+  );
 
-  // common for all (or most) instructions
-  wire [6:0] opcode = cur[6:0];
-  wire [4:0] rd = cur[11:7];
+  // alu
+  reg [`WORD:0] a;
+  reg [`WORD:0] b;
+  reg [`WORD:0] res;
+  reg [`WORD:0] dest;
+  reg [`WORD:0] branch_addr;
 
-  // U-type instructions
-  wire [19:0] u_imm = cur[31:12];
+  // TODO: do something more useful with GPIO
+  assign gpio = pc[7:0];
 
-  // I-type instructions
-  wire [11:0] i_imm = cur[31:20];
-  wire [4:0] rs1 = cur[19:15];
-  wire [2:0] funct3 = cur[14:12];
-  wire [11:0] funct12 = cur[31:20];
-
-  // R-type instructions
-  wire [6:0] funct7 = cur[31:25];
-  wire [4:0] rs2 = cur[24:20];
-
-  // S-type instructions
-  wire [11:0] s_imm = {cur[31:25], cur[11:7]};
-
-  // J-type instructions
-  wire signed [20:0] j_imm = {cur[31], cur[19:12], cur[20], cur[30:21], 1'b0};
-
-  integer stage;
-  integer i;
-  integer j;
-
-  task set_memory;
-    input integer address;
-    input reg[`WORD:0] value;
-    begin
-      for(j = 0; j < 4; j++)
-        mem[4*address + j] = value[31-j*8:24-j*8];
-    end
-  endtask
+  reg [31:0] stage;
 
   initial begin
-    pc = 0;
-    stage = 0;
-
-    set_memory(0, {20'h1f, 5'd0, `LUI}); // lui r0, 0x1f
-    set_memory(1, {20'hf1, 5'd1, `LUI}); // lui r1, 0xf1
-    set_memory(31, {12'h00, 5'h00, 3'b0, 5'd2, `JALR}); // jalr r2, (0x00 + 0x00)
+    pc = 'h0;
+    mem_write = 3'b0;
+    mem_addr = 'h0;
+    dest <= 'hff;
+    stage = 'b1;
   end
 
-  //assign gpio = gpio_regs;
-  assign gpio = pc[9:2];
-  //assign gpio = regs[0][19:12];
-
   always @(posedge clk) begin
-    // fetch
-    if (stage == 0) begin
-      next_pc <= pc + 4;
-      cur <= {mem[pc], mem[pc+1], mem[pc+2], mem[pc+3]};
-      stage <= stage + 1;
+    // instruction fetch
+    if (stage[0]) begin
     end
 
-    // decode (actually just memory access rn)
-    if (stage == 1) begin
-      if (opcode == `LOAD)
-        mem_val <= {
-          mem[regs[rs1] + $signed(i_imm)],
-          mem[regs[rs1] + $signed(i_imm) + 1],
-          mem[regs[rs1] + $signed(i_imm) + 2],
-          mem[regs[rs1] + $signed(i_imm) + 3]
-        };
-      stage <= stage + 1;
-    end
-
-    // execute
-    if (stage == 2) begin
+    // decode
+    if (stage[1]) begin
       case (opcode)
-        `LUI: regs[rd] <= {u_imm, 12'b0};
-        `AUIPC: regs[rd] <= pc + {u_imm, 12'b0};
+        `LUI: begin
+          a <= {u_imm, 12'b0};
+          b <= 'b0;
+          dest <= rd;
+        end
+        `AUIPC: begin
+          a <= pc;
+          b <= {u_imm, 12'b0};
+          dest <= rd;
+        end
         `JAL: begin
-          next_pc <= pc + j_imm;
-          regs[rd] <= pc + j_imm;
+          a <= pc;
+          b <= j_imm;
+          dest <= rd;
         end
         `JALR: begin
-          next_pc <= regs[rs1] + $signed(i_imm);
-          regs[rd] <= (regs[rs1] + $signed(i_imm));
+          a <= regs[rs1];
+          b <= $signed(i_imm);
+          dest <= rd;
         end
         `BRANCH: begin
-          case (funct3)
-            `BEQ: next_pc <= (regs[rs1] == regs[rs2]
-              ? pc + $signed(j_imm) : next_pc);
-            `BNE: next_pc <= (regs[rs1] != regs[rs2]
-              ? pc + $signed(j_imm) : next_pc);
-            `BLT: next_pc <= ($signed(regs[rs1]) < $signed(regs[rs2])
-              ? pc + $signed(j_imm) : next_pc);
-            `BGE: next_pc <= ($signed(regs[rs1]) > $signed(regs[rs2])
-              ? pc + $signed(j_imm) : next_pc);
-            `BLTU: next_pc <= (regs[rs1] < regs[rs2]
-              ? pc + $signed(j_imm) : next_pc);
-            `BGEU: next_pc <= (regs[rs1] > regs[rs2] ?
-              pc + $signed(j_imm) : next_pc);
-          endcase
+          a <= regs[rs1];
+          b <= regs[rs2];
+          branch_addr = pc + $signed(j_imm);
+          dest <= 'hff;
         end
         `LOAD: begin
-          case (funct3)
-            `LB: regs[rd] = {{24{mem_val[7]}}, mem_val[7:0]};
-            `LH: regs[rd] = {{16{mem_val[15]}}, mem_val[15:0]};
-            `LW: regs[rd] = mem_val;
-            `LBU: regs[rd] = {24'b0, mem_val[7:0]};
-            `LHU: regs[rd] = {16'b0, mem_val[15:0]};
-          endcase
+          a <= regs[rs1];
+          b <= $signed(i_imm);
+          dest <= rd;
+          mem_write <= 1'b0;
         end
         `STORE: begin
-          case (funct3)
-            `SB: mem[regs[rs1] + $signed(s_imm)] <= regs[rs2][7:0];
-            `SH: begin
-              mem[regs[rs1] + $signed(s_imm)] <= regs[rs2][15:8];
-              mem[regs[rs1] + $signed(s_imm) + 1] <= regs[rs2][7:0];
-            end
-            `SW: begin
-              mem[regs[rs1] + $signed(s_imm)] <= regs[rs2][31:24];
-              mem[regs[rs1] + $signed(s_imm) + 1] <= regs[rs2][23:16];
-              mem[regs[rs1] + $signed(s_imm) + 2] <= regs[rs2][15:8];
-              mem[regs[rs1] + $signed(s_imm) + 3] <= regs[rs2][7:0];
-            end
-          endcase
+          a <= regs[rs1];
+          b <= $signed(s_imm);
+          dest <= 'hff;
+          mem_in <= regs[rs2];
         end
         `OP_IMM: begin
           case (funct3)
+            `ADDI: begin
+              a <= {{20{i_imm[11]}}, i_imm[11:0]};
+              b <= regs[rs1];
+              dest <= rd;
+            end
+            // `SLTI:
+            // `SLTIU:
             /*
-            `ADDI:
-            `SLTI:
-            `SLTIU:
-            `XORI:
             `ORI:
             `ANDI:
             `SLLI:
@@ -153,43 +122,94 @@ module riscv (
             */
           endcase
         end
-        `OP: begin
-          /*
-          `ADD:
-          `SUB:
-          `SLL:
-          `SLT:
-          `SLTU:
-          `XOR:
-          `SRL:
-          `SRA:
-          `OR:
-          `AND:
-          */
-        end
-        `MISC_MEM: begin
+      endcase
+    end
+
+    // execute
+    if (stage[2]) begin
+      case (opcode)
+        // alu
+        `LUI, `AUIPC, `JAL, `ADDI: res <= a + b;
+        `BRANCH: begin
           case (funct3)
-            /*
-            `FENCE:
-            */
+            `BEQ: res <= a == b;
+            `BNE: res <= a != b;
+            `BLT: res <= $signed(a) < $signed(b);
+            `BGE: res <= $signed(a) > $signed(b);
+            `BLTU: res <= a < b;
+            `BGEU: res <= a > b;
           endcase
         end
-        `SYSTEM: begin
-          case (funct12)
-            /*
-            `ECALL:
-            `EBREAK:
-            */
+        `LOAD: begin
+          mem_addr <= a + b;
+          mem_write <= 1'b0;
+        end
+        `STORE: begin
+          mem_addr <= a + b;
+          case (funct3)
+            `SB: begin
+              res <= mem_val[7:0];
+              mem_write <= 3'b100;
+            end
+            `SH: begin
+              res <= {mem_val[15:8], mem_val[7:0]};
+              mem_write <= 3'b010;
+            end
+            `SW: begin
+              res <= mem_val;
+              mem_write <= 3'b001;
+            end
           endcase
         end
       endcase
-      stage <= stage + 1;
     end
 
-    // finish (not sure if I need?)
-    if (stage == 3) begin
-      pc <= next_pc;
-      stage <= 0;
+    // memory access
+    if (stage[3]) begin
+      case (opcode)
+        `LOAD: begin
+          case (funct3)
+            `LB: res <= {{24{mem_val[7]}}, mem_val[7:0]};
+            `LH: res <= {{16{mem_val[15]}}, mem_val[15:0]};
+            `LW: res <= mem_val;
+            `LBU: res <= {24'b0, mem_val[7:0]};
+            `LHU: res <= {16'b0, mem_val[15:0]};
+          endcase
+        end
+      endcase
     end
+
+    // write back
+    if (stage[4]) begin
+      stage <= 'b1;
+
+      case (opcode)
+        `JAL, `JALR: begin
+          pc <= res;
+          regs[dest] <= res;
+        end
+        `AUIPC, `LUI: begin
+          regs[dest] <= res;
+          pc <= pc + 1;
+        end
+        `BRANCH: pc <= res[0] ? branch_addr : pc + 1;
+        `LOAD: begin
+          regs[dest] <= res;
+          pc <= pc + 1;
+        end
+        `STORE: begin
+          mem_write <= 1'b0;
+          pc <= pc + 1;
+        end
+        `OP_IMM: begin
+          case (funct3)
+            `ADDI: begin
+              regs[dest] <= res;
+              pc <= pc + 1;
+            end
+          endcase
+        end
+      endcase
+    end else stage <= stage << 1;
   end
 endmodule
