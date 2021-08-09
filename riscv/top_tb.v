@@ -24,7 +24,7 @@ module tb();
   integer i;
 
   initial begin
-    for (i = 0; i < 1024; i++)
+    for (i = 0; i <= 1023; i++)
       cpu.prog.mem[i] = 32'b0;
     cpu.prog.mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
     cpu.prog.mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1

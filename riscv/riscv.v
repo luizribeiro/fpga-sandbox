@@ -31,10 +31,12 @@ module riscv (
   // alu
   reg [`WORD:0] a;
   reg [`WORD:0] b;
-  reg [`WORD:0] res;
+  reg [`WORD:0] alu_ans;
   reg [7:0] dest;
   reg [`WORD:0] branch_addr;
 
+  reg [`WORD:0] memr;
+  reg [`WORD:0] memw;
   reg [`WORD:0] mem_addr;
   reg [`WORD:0] mem_val;
   wire [`WORD:0] wmem_val;
@@ -44,7 +46,7 @@ module riscv (
     .clk(clk),
     .write_enable(mem_write),
     .addr(mem_addr),
-    .data_in(res),
+    .data_in(memw),
     .data_out(wmem_val)
   );
 
@@ -76,172 +78,168 @@ module riscv (
       regs[i] = 32'd0;
   end
 
-  always @(posedge clk) begin
+  always @(posedge clk)
+    stage <= stage[4] ? 'b1 : stage << 1;
+
+  always @(posedge stage[0]) begin
     // instruction fetch
-    if (stage[0]) begin
-      inst <= winst;
-      mem_val <= wmem_val;
-    end
+    inst <= winst;
+    mem_val <= wmem_val;
+  end
 
+  always @(posedge stage[1]) begin
     // decode
-    if (stage[1]) begin
-      case (opcode)
-        `LUI: begin
-          a <= {u_imm, 12'b0};
-          b <= 'b0;
-          dest <= {3'b0, rd};
-        end
-        `AUIPC: begin
-          a <= pc;
-          b <= {u_imm, 12'b0};
-          dest <= {3'b0, rd};
-        end
-        `JAL: begin
-          a <= pc;
-          b <= {11'b0, j_imm};
-          dest <= {3'b0, rd};
-        end
-        `JALR: begin
-          a <= regs[rs1];
-          b <= $signed({{20{i_imm[11]}}, i_imm});
-          dest <= {3'b0, rd};
-        end
-        `BRANCH: begin
-          a <= regs[rs1];
-          b <= regs[rs2];
-          branch_addr = pc + $signed({{11{j_imm[20]}}, j_imm});
-          dest <= 'hff;
-        end
-        `LOAD: begin
-          a <= regs[rs1];
-          b <= $signed({{20{i_imm[11]}}, i_imm});
-          dest <= {3'b0, rd};
-        end
-        `STORE: begin
-          a <= regs[rs1];
-          b <= $signed({{20{s_imm[11]}}, s_imm});
-          dest <= 'hff;
-          mem_in <= regs[rs2];
-        end
-        /*
-        `OP_IMM: begin
-          case (funct3)
-            `ADDI: begin
-              a <= {{20{i_imm[11]}}, i_imm[11:0]};
-              b <= regs[rs1];
-              dest <= {3'b0, rd};
-            end
-            // `SLTI:
-            // `SLTIU:
-            // `ORI:
-            // `ANDI:
-            // `SLLI:
-            // `SRLI:
-            // `SRAI:
-          endcase
-        end
-      */
-      endcase
-    end
+    case (opcode)
+      `LUI: begin
+        a <= {u_imm, 12'b0};
+        b <= 'b0;
+        dest <= {3'b0, rd};
+      end
+      `AUIPC: begin
+        a <= pc;
+        b <= {u_imm, 12'b0};
+        dest <= {3'b0, rd};
+      end
+      `JAL: begin
+        a <= pc;
+        b <= {11'b0, j_imm};
+        dest <= {3'b0, rd};
+      end
+      `JALR: begin
+        a <= regs[rs1];
+        b <= $signed({{20{i_imm[11]}}, i_imm});
+        dest <= {3'b0, rd};
+      end
+      `BRANCH: begin
+        a <= regs[rs1];
+        b <= regs[rs2];
+        branch_addr = pc + $signed({{11{j_imm[20]}}, j_imm});
+        dest <= 'hff;
+      end
+      `LOAD: begin
+        a <= regs[rs1];
+        b <= $signed({{20{i_imm[11]}}, i_imm});
+        dest <= {3'b0, rd};
+      end
+      `STORE: begin
+        a <= regs[rs1];
+        b <= $signed({{20{s_imm[11]}}, s_imm});
+        dest <= 'hff;
+        mem_in <= regs[rs2];
+      end
+      /*
+      `OP_IMM: begin
+        case (funct3)
+          `ADDI: begin
+            a <= {{20{i_imm[11]}}, i_imm[11:0]};
+            b <= regs[rs1];
+            dest <= {3'b0, rd};
+          end
+          // `SLTI:
+          // `SLTIU:
+          // `ORI:
+          // `ANDI:
+          // `SLLI:
+          // `SRLI:
+          // `SRAI:
+        endcase
+      end
+    */
+    endcase
+  end
 
+  always @(posedge stage[2]) begin
     // execute
-    if (stage[2]) begin
-      case (opcode)
-        // alu
-        `LUI, `AUIPC, `JAL, `JALR, `LOAD, `STORE: res <= a + b;
-        `BRANCH: begin
-          case (funct3)
-            `BEQ: res <= {31'b0, a == b};
-            `BNE: res <= {31'b0, a != b};
-            `BLT: res <= {31'b0, $signed(a) < $signed(b)};
-            `BGE: res <= {31'b0, $signed(a) > $signed(b)};
-            `BLTU: res <= {31'b0, a < b};
-            `BGEU: res <= {31'b0, a > b};
-          endcase
-        end
-        /*
-        `OP_IMM: begin
-          case (funct3)
-            `ADDI: begin
-              res <= a + b;
-            end
-          endcase
-        end
-      */
-      endcase
-    end
+    case (opcode)
+      // alu
+      `LUI, `AUIPC, `JAL, `JALR, `LOAD, `STORE: alu_ans <= a + b;
+      `BRANCH: begin
+        case (funct3)
+          `BEQ: alu_ans <= {31'b0, a == b};
+          `BNE: alu_ans <= {31'b0, a != b};
+          `BLT: alu_ans <= {31'b0, $signed(a) < $signed(b)};
+          `BGE: alu_ans <= {31'b0, $signed(a) > $signed(b)};
+          `BLTU: alu_ans <= {31'b0, a < b};
+          `BGEU: alu_ans <= {31'b0, a > b};
+        endcase
+      end
+      /*
+      `OP_IMM: begin
+        case (funct3)
+          `ADDI: begin
+            alu_ans <= a + b;
+          end
+        endcase
+      end
+    */
+    endcase
+  end
 
+  always @(posedge stage[3]) begin
     // memory access
-    if (stage[3]) begin
-      case (opcode)
-        `LOAD: begin
-          // FIXME: hmm this doesn't seem right
-          mem_addr <= res;
-          case (funct3)
-            `LB: res <= {{24{mem_val[7]}}, mem_val[7:0]};
-            `LW: res <= mem_val;
-            `LBU: res <= {24'b0, mem_val[7:0]};
-            `LHU: res <= {16'b0, mem_val[15:0]};
-          endcase
-        end
-        /*
-        // FIXME: this is using a ton of LUTs due to the mem_write assignments
-        `STORE: begin
-          // FIXME: hmm same as above
-          mem_addr <= res;
-          case (funct3)
-            `SB: begin
-              res <= {24'b0, mem_val[7:0]};
-              mem_write <= 3'b100;
-            end
-            `SH: begin
-              res <= {16'b0, mem_val[15:8], mem_val[7:0]};
-              mem_write <= 3'b010;
-            end
-            `SW: begin
-              res <= mem_val;
-              mem_write <= 3'b001;
-            end
-          endcase
-        end
-        */
-      endcase
-    end
+    case (opcode)
+      `LOAD: begin
+        mem_addr <= alu_ans;
+        mem_write <= 3'b0;
+        case (funct3)
+          `LB: memr <= {{24{mem_val[7]}}, mem_val[7:0]};
+          `LW: memr <= mem_val;
+          `LBU: memr <= {24'b0, mem_val[7:0]};
+          `LHU: memr <= {16'b0, mem_val[15:0]};
+        endcase
+      end
+      `STORE: begin
+        mem_addr <= alu_ans;
+        case (funct3)
+          `SB: begin
+            memw <= {24'b0, mem_val[7:0]};
+            // FIXME: this is using way too many LUTs
+            //mem_write <= 3'b100;
+          end
+          `SH: begin
+            memw <= {16'b0, mem_val[15:8], mem_val[7:0]};
+            //mem_write <= 3'b010;
+          end
+          `SW: begin
+            memw <= mem_val;
+            //mem_write <= 3'b001;
+          end
+        endcase
+      end
+      default: mem_write <= 3'b0;
+    endcase
+  end
 
+  always @(posedge stage[4]) begin
     // write back
-    if (stage[4]) begin
-      stage <= 'b1;
-      mem_write <= 3'b0;
-
-      case (opcode)
-        `JAL, `JALR: begin
-          pc <= res;
-          regs[dest[4:0]] <= res;
-        end
-        `AUIPC, `LUI: begin
-          regs[dest[4:0]] <= res;
-          pc <= pc + 1;
-        end
-        `BRANCH: pc <= res[0] ? branch_addr : pc + 1;
-        `LOAD: begin
-          regs[dest[4:0]] <= res;
-          pc <= pc + 1;
-        end
-        `STORE: begin
-          pc <= pc + 1;
-        end
-        /*
-        `OP_IMM: begin
-          case (funct3)
-            `ADDI: begin
-              regs[dest[4:0]] <= res;
-            end
-          endcase
-          pc <= pc + 1;
-        end
-        */
-        default: pc <= pc + 1;
-      endcase
-    end else stage <= stage << 1;
+    case (opcode)
+      `JAL, `JALR: begin
+        pc <= alu_ans;
+        regs[dest[4:0]] <= alu_ans;
+      end
+      `AUIPC, `LUI: begin
+        regs[dest[4:0]] <= alu_ans;
+        pc <= pc + 1;
+      end
+      `BRANCH: pc <= alu_ans[0] ? branch_addr : pc + 1;
+      `LOAD: begin
+        regs[dest[4:0]] <= memr;
+        pc <= pc + 1;
+      end
+      `STORE: begin
+        pc <= pc + 1;
+      end
+      /*
+      `OP_IMM: begin
+        case (funct3)
+          `ADDI: begin
+            regs[dest[4:0]] <= alu_ans;
+          end
+        endcase
+        pc <= pc + 1;
+      end
+      */
+      default: pc <= pc + 1;
+    endcase
   end
 endmodule

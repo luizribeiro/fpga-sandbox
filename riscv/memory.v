@@ -7,11 +7,11 @@ module ram (
   input wire [31:0] data_in,
   output wire [31:0] data_out
 );
-  reg [7:0] mem [4095:0];
+  reg [7:0] mem [2047:0];
   integer i;
 
   initial begin
-    for (i = 0; i < 4096; i++)
+    for (i = 0; i <= 2047; i++)
       mem[i] = 8'b0;
   end
 
@@ -41,7 +41,7 @@ module rom (
   integer i;
 
   initial begin
-    for (i = 0; i < 1023; i++)
+    for (i = 0; i <= 1023; i++)
       mem[i] = 32'b0;
 
     mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
