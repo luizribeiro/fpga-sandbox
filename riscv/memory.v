@@ -44,9 +44,9 @@ module rom (
     for (i = 0; i < 1023; i++)
       mem[i] = 32'b0;
 
-    mem[0] = {20'h1f, 5'd1, `LUI}; // lui r0, 0x1f
-    mem[1] = {20'hf1, 5'd2, `LUI}; // lui r1, 0xf1
-    mem[31] = {12'h00, 5'h00, 3'b0, 5'd3, `JALR}; // jalr r2, (0x00 + 0x00)
+    mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
+    mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
+    mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
   end
 
   assign data = mem[addr];

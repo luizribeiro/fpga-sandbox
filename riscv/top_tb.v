@@ -10,25 +10,26 @@ module tb();
   end
 
   reg clk = 1'b0;
-  wire d0;
-  wire d1;
-  wire d2;
-  wire d3;
-  wire d4;
-  wire d5;
-  wire d6;
-  wire d7;
+  wire [7:0] gpio;
 
   riscv cpu (
     .clk(clk),
-    .gpio({d0, d1, d2, d3, d4, d5, d6, d7})
+    .gpio(gpio)
   );
 
   always begin
     #HALF_PERIOD clk = !clk;
   end
 
+  integer i;
+
   initial begin
+    for (i = 0; i < 1024; i++)
+      cpu.prog.mem[i] = 32'b0;
+    cpu.prog.mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
+    cpu.prog.mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
+    cpu.prog.mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
+
     repeat(NUM_CYCLES) @(negedge clk);
 
     $finish;

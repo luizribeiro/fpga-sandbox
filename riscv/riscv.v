@@ -117,13 +117,13 @@ module riscv (
           b <= $signed({{20{i_imm[11]}}, i_imm});
           dest <= {3'b0, rd};
         end
-        /*
         `STORE: begin
           a <= regs[rs1];
           b <= $signed({{20{s_imm[11]}}, s_imm});
           dest <= 'hff;
           mem_in <= regs[rs2];
         end
+        /*
         `OP_IMM: begin
           case (funct3)
             `ADDI: begin
@@ -185,7 +185,7 @@ module riscv (
           endcase
         end
         /*
-        // FIXME: this is using a ton of LUTs
+        // FIXME: this is using a ton of LUTs due to the mem_write assignments
         `STORE: begin
           // FIXME: hmm same as above
           mem_addr <= res;
@@ -211,6 +211,7 @@ module riscv (
     // write back
     if (stage[4]) begin
       stage <= 'b1;
+      mem_write <= 3'b0;
 
       case (opcode)
         `JAL, `JALR: begin
@@ -226,11 +227,10 @@ module riscv (
           regs[dest[4:0]] <= res;
           pc <= pc + 1;
         end
-        /*
         `STORE: begin
-          mem_write <= 3'b0;
           pc <= pc + 1;
         end
+        /*
         `OP_IMM: begin
           case (funct3)
             `ADDI: begin
