@@ -37,13 +37,16 @@ module rom (
   input wire [31:0] addr,
   output wire [31:0] data
 );
-  reg [31:0] mem [4095:0];
+  reg [31:0] mem [1023:0];
   integer i;
 
   initial begin
-    mem[0] = {20'h1f, 5'd0, `LUI}; // lui r0, 0x1f
-    mem[1] = {20'hf1, 5'd1, `LUI}; // lui r1, 0xf1
-    mem[123] = {12'h00, 5'h00, 3'b0, 5'd2, `JALR}; // jalr r2, (0x00 + 0x00)
+    for (i = 0; i < 1023; i++)
+      mem[i] = 32'b0;
+
+    mem[0] = {20'h1f, 5'd1, `LUI}; // lui r0, 0x1f
+    mem[1] = {20'hf1, 5'd2, `LUI}; // lui r1, 0xf1
+    mem[31] = {12'h00, 5'h00, 3'b0, 5'd3, `JALR}; // jalr r2, (0x00 + 0x00)
   end
 
   assign data = mem[addr];
