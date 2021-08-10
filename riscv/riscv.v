@@ -41,7 +41,7 @@ module riscv (
   reg [`WORD:0] mem_in;
   reg [2:0] mem_write;
   ram memory (
-    .clk(stage[3]),
+    .clk(clk),
     .write_enable(mem_write),
     .addr(mem_addr),
     .data_in(mem_in),
@@ -180,8 +180,6 @@ module riscv (
       `STORE: mem_addr <= alu_ans;
     endcase
   end
-  /*
-  // FIXME: this uses a ton of LUTs :(
   always @(posedge stage[3]) begin
     // memory access
     case (opcode)
@@ -196,7 +194,6 @@ module riscv (
       default: mem_write <= 3'b0;
     endcase
   end
-  */
 
   always @(posedge stage[4]) begin
     // write back
@@ -220,6 +217,9 @@ module riscv (
         pc <= pc + 1;
       end
       `STORE: begin
+        // FIXME: without this, we use tons of LUTs. with it, we get a warning
+        // during synthesis
+        mem_write <= 3'b0;
         pc <= pc + 1;
       end
       /*
