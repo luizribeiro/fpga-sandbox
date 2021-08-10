@@ -1,5 +1,7 @@
 `include "instructions.vh"
 
+`define MEM_SIZE 2047
+
 module ram (
   input wire clk,
   input wire [2:0] write_enable,
@@ -7,11 +9,11 @@ module ram (
   input wire [31:0] data_in,
   output wire [31:0] data_out
 );
-  reg [7:0] mem [2047:0];
+  reg [7:0] mem [`MEM_SIZE:0];
   integer i;
 
   initial begin
-    for (i = 0; i <= 2047; i++)
+    for (i = 0; i <= `MEM_SIZE; i++)
       mem[i] = 8'b0;
   end
 
