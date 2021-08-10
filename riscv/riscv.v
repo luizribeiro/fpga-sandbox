@@ -35,18 +35,16 @@ module riscv (
   reg [7:0] dest;
   reg [`WORD:0] branch_addr;
 
-  reg [`WORD:0] memr;
-  reg [`WORD:0] memw;
   reg [`WORD:0] mem_addr;
   reg [`WORD:0] mem_val;
   wire [`WORD:0] wmem_val;
   reg [`WORD:0] mem_in;
   reg [2:0] mem_write;
   ram memory (
-    .clk(clk),
+    .clk(stage[3]),
     .write_enable(mem_write),
     .addr(mem_addr),
-    .data_in(memw),
+    .data_in(mem_in),
     .data_out(wmem_val)
   );
 
@@ -178,37 +176,27 @@ module riscv (
   always @(posedge stage[3]) begin
     // memory access
     case (opcode)
-      `LOAD: begin
-        mem_addr <= alu_ans;
-        mem_write <= 3'b0;
-        case (funct3)
-          `LB: memr <= {{24{mem_val[7]}}, mem_val[7:0]};
-          `LW: memr <= mem_val;
-          `LBU: memr <= {24'b0, mem_val[7:0]};
-          `LHU: memr <= {16'b0, mem_val[15:0]};
-        endcase
-      end
+      `LOAD: mem_addr <= alu_ans;
+      `STORE: mem_addr <= alu_ans;
+    endcase
+  end
+  /*
+  // FIXME: this uses a ton of LUTs :(
+  always @(posedge stage[3]) begin
+    // memory access
+    case (opcode)
       `STORE: begin
-        mem_addr <= alu_ans;
         case (funct3)
-          `SB: begin
-            memw <= {24'b0, mem_val[7:0]};
-            // FIXME: this is using way too many LUTs
-            //mem_write <= 3'b100;
-          end
-          `SH: begin
-            memw <= {16'b0, mem_val[15:8], mem_val[7:0]};
-            //mem_write <= 3'b010;
-          end
-          `SW: begin
-            memw <= mem_val;
-            //mem_write <= 3'b001;
-          end
+          `SB: mem_write <= 3'b100;
+          `SH: mem_write <= 3'b010;
+          `SW: mem_write <= 3'b001;
+          default: mem_write <= 3'b0;
         endcase
       end
       default: mem_write <= 3'b0;
     endcase
   end
+  */
 
   always @(posedge stage[4]) begin
     // write back
@@ -223,7 +211,12 @@ module riscv (
       end
       `BRANCH: pc <= alu_ans[0] ? branch_addr : pc + 1;
       `LOAD: begin
-        regs[dest[4:0]] <= memr;
+        case (funct3)
+          `LB: regs[dest[4:0]] <= {{24{mem_val[7]}}, mem_val[7:0]};
+          `LW: regs[dest[4:0]] <= mem_val;
+          `LBU: regs[dest[4:0]] <= {24'b0, mem_val[7:0]};
+          `LHU: regs[dest[4:0]] <= {16'b0, mem_val[15:0]};
+        endcase
         pc <= pc + 1;
       end
       `STORE: begin
