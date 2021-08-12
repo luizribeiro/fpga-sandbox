@@ -35,6 +35,7 @@ module tb();
       cpu.prog.mem[i] = 32'b0;
     cpu.prog.mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
     cpu.prog.mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
+    cpu.prog.mem[2] = {7'h0, 5'h1, 5'h0, `SW, 5'h0, `STORE}; // sw x1, 0(x0)
     cpu.prog.mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
 
     `assert(cpu.stage == 'b00001, "Expected stage 1");
@@ -46,10 +47,15 @@ module tb();
     `assert(cpu.opcode == `LUI, "Expected LUI opcode @ PC=0x00");
     `assert(cpu.regs[1] == 'h00, "x1 should originally be 0x00");
     `assert(cpu.regs[2] == 'h00, "x2 should originally be 0x00");
+    `assert(
+      ({cpu.memory.mem[0], cpu.memory.mem[1], cpu.memory.mem[2], cpu.memory.mem[3]}
+        == 'h00),
+      "Memory address 0x00 should be initially set to 0x00"
+    );
 
     repeat(3 * CYCLES) @(negedge clk);
     `assert(cpu.stage == 'b10000, "Expected stage 5");
-    `assert(cpu.pc == 'h01, "Expected PC=0x01 on stage 5");
+    `assert(cpu.pc == 'h01, "Expected PC to be set to 0x01 on stage 5");
     `assert(
       (cpu.regs[1] == {20'h1f, 12'h00}),
       "x1's 20 upper bits should be loaded with 0x1f"
@@ -57,14 +63,24 @@ module tb();
 
     repeat(5 * CYCLES) @(negedge clk);
     `assert(cpu.stage == 'b10000, "Expected stage 5 again");
-    `assert(cpu.pc == 'h02, "Expected PC=0x01 on stage 5");
+    `assert(cpu.pc == 'h02, "Expected PC to be set to 0x02 on stage 5");
     `assert(cpu.opcode == `LUI, "Expected LUI opcode @ PC=0x01");
     `assert(
       (cpu.regs[2] == {20'hf1, 12'h00}),
       "x2's 20 upper bits should be loaded with 0xf1"
     );
 
-    repeat(29 * 5 * CYCLES) @(negedge clk);
+    repeat(5 * CYCLES) @(negedge clk);
+    `assert(cpu.stage == 'b10000, "Expected stage 5 again");
+    `assert(cpu.pc == 'h03, "Expected PC to be set to 0x03 on stage 5");
+    `assert(cpu.opcode == `STORE, "Expected STORE opcode @ PC=0x02");
+    `assert(
+      ({cpu.memory.mem[0], cpu.memory.mem[1], cpu.memory.mem[2], cpu.memory.mem[3]}
+        == {20'h1f, 12'h00}),
+      "Memory address 0x00 should be loaded with x1's contents"
+    );
+
+    repeat(28 * 5 * CYCLES) @(negedge clk);
     `assert(cpu.pc == 31, "Expected PC=31 on stage 5");
     `assert(cpu.opcode == 7'b0, "Expected nil opcode");
 
