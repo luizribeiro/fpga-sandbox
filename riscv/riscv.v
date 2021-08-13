@@ -190,14 +190,12 @@ module riscv (
   always @(posedge stage[3]) begin
     // memory access
     case (opcode)
-      `LOAD: mem_addr <= alu_ans;
-      `STORE: mem_addr <= alu_ans;
-    endcase
-  end
-  always @(posedge stage[3]) begin
-    // memory access
-    case (opcode)
+      `LOAD: begin
+        mem_addr <= alu_ans;
+        mem_write <= 3'b0;
+      end
       `STORE: begin
+        mem_addr <= alu_ans;
         case (funct3)
           `SB: mem_write <= 3'b100;
           `SH: mem_write <= 3'b010;
@@ -205,7 +203,6 @@ module riscv (
           default: mem_write <= 3'b0;
         endcase
       end
-      default: mem_write <= 3'b0;
     endcase
   end
 
