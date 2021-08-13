@@ -137,6 +137,11 @@ module riscv (
           // TODO: implement `SRAI:
         endcase
       end
+      `OP: begin
+        a <= regs[rs1];
+        b <= regs[rs2];
+        dest <= regs[rd];
+      end
     endcase
   end
 
@@ -163,6 +168,20 @@ module riscv (
           `XORI: alu_ans <= a ^ b;
           `ORI: alu_ans <= a | b;
           `ANDI: alu_ans <= a & b;
+        endcase
+      end
+      `OP: begin
+        case (funct3)
+          `ADD: alu_ans <= a + b;
+          // TODO: implement SUB
+          `SLL: alu_ans <= a << b;
+          `SLT: alu_ans <= {31'b0, $signed(a) > $signed(b)};
+          `SLTU: alu_ans <= {31'b0, a > b};
+          `XOR: alu_ans <= a ^ b;
+          `SRL: alu_ans <= a >> b;
+          // TODO implement SRA
+          `OR: alu_ans <= a | b;
+          `AND: alu_ans <= a & b;
         endcase
       end
     endcase
@@ -217,11 +236,8 @@ module riscv (
         mem_write <= 3'b0;
         pc <= pc + 1;
       end
-      `OP_IMM: begin
-        case (funct3)
-          `ADDI, `SLTI, `SLTIU, `XORI, `ORI, `ANDI:
-            regs[dest[4:0]] <= alu_ans;
-        endcase
+      `OP_IMM, `OP: begin
+        regs[dest[4:0]] <= alu_ans;
         pc <= pc + 1;
       end
       default: pc <= pc + 1;
