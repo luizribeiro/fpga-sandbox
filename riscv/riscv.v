@@ -125,24 +125,18 @@ module riscv (
         dest <= 'hff;
         mem_in <= regs[rs2];
       end
-      /*
       `OP_IMM: begin
         case (funct3)
-          `ADDI: begin
+          `ADDI, `SLTI, `SLTIU, `XORI, `ORI, `ANDI: begin
             a <= {{20{i_imm[11]}}, i_imm[11:0]};
             b <= regs[rs1];
             dest <= {3'b0, rd};
           end
-          // `SLTI:
-          // `SLTIU:
-          // `ORI:
-          // `ANDI:
-          // `SLLI:
-          // `SRLI:
-          // `SRAI:
+          // TODO: implement `SLLI:
+          // TODO: implement `SRLI:
+          // TODO: implement `SRAI:
         endcase
       end
-    */
     endcase
   end
 
@@ -161,15 +155,16 @@ module riscv (
           `BGEU: alu_ans <= {31'b0, a > b};
         endcase
       end
-      /*
       `OP_IMM: begin
         case (funct3)
-          `ADDI: begin
-            alu_ans <= a + b;
-          end
+          `ADDI: alu_ans <= a + b;
+          `SLTI: alu_ans <= {31'b0, $signed(a) > $signed(b)};
+          `SLTIU: alu_ans <= {31'b0, a > b};
+          `XORI: alu_ans <= a ^ b;
+          `ORI: alu_ans <= a | b;
+          `ANDI: alu_ans <= a & b;
         endcase
       end
-    */
     endcase
   end
 
@@ -222,16 +217,13 @@ module riscv (
         mem_write <= 3'b0;
         pc <= pc + 1;
       end
-      /*
       `OP_IMM: begin
         case (funct3)
-          `ADDI: begin
+          `ADDI, `SLTI, `SLTIU, `XORI, `ORI, `ANDI:
             regs[dest[4:0]] <= alu_ans;
-          end
         endcase
         pc <= pc + 1;
       end
-      */
       default: pc <= pc + 1;
     endcase
   end
