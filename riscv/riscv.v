@@ -99,7 +99,7 @@ module riscv (
       end
       `JAL: begin
         a <= pc;
-        b <= {11'b0, j_imm};
+        b <= $signed({{11{j_imm[20]}}, j_imm});
         dest <= {3'b0, rd};
       end
       `JALR: begin
@@ -214,9 +214,9 @@ module riscv (
       end
       `AUIPC, `LUI: begin
         regs[dest[4:0]] <= alu_ans;
-        pc <= pc + 1;
+        pc <= pc + 4;
       end
-      `BRANCH: pc <= alu_ans[0] ? branch_addr : pc + 1;
+      `BRANCH: pc <= alu_ans[0] ? branch_addr : pc + 4;
       `LOAD: begin
         case (funct3)
           `LB: regs[dest[4:0]] <= {{24{mem_val[7]}}, mem_val[7:0]};
@@ -224,19 +224,19 @@ module riscv (
           `LBU: regs[dest[4:0]] <= {24'b0, mem_val[7:0]};
           `LHU: regs[dest[4:0]] <= {16'b0, mem_val[15:0]};
         endcase
-        pc <= pc + 1;
+        pc <= pc + 4;
       end
       `STORE: begin
         // FIXME: without this, we use tons of LUTs. with it, we get a warning
         // during synthesis
         mem_write <= 3'b0;
-        pc <= pc + 1;
+        pc <= pc + 4;
       end
       `OP_IMM, `OP: begin
         regs[dest[4:0]] <= alu_ans;
-        pc <= pc + 1;
+        pc <= pc + 4;
       end
-      default: pc <= pc + 1;
+      default: pc <= pc + 4;
     endcase
   end
 endmodule

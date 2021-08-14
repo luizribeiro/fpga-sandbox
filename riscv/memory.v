@@ -54,5 +54,5 @@ module rom (
     $fclose(fd);
   end
 
-  assign data = mem[addr];
+  assign data = mem[addr >> 2];
 endmodule
