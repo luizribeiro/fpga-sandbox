@@ -48,8 +48,7 @@ module riscv (
     .data_out(wmem_val)
   );
 
-  // TODO: do something more useful with GPIO
-  assign gpio = pc[7:0];
+  assign gpio = memory.mem['ha0];
   assign opcode = inst[6:0];
   assign rd = inst[11:7];
   assign rs1 = inst[19:15];

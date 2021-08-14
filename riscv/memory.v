@@ -40,15 +40,18 @@ module rom (
   output wire [31:0] data
 );
   reg [31:0] mem [1023:0];
-  integer i;
 
+  reg [31:0] rin;
+  integer i, fd, cnt;
   initial begin
     for (i = 0; i <= 1023; i++)
       mem[i] = 32'b0;
-
-    mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
-    mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
-    mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
+    fd = $fopen("hello.bin", "rb");
+    for (i = 0; !$feof(fd); i++) begin
+      cnt = $fread(rin, fd);
+      mem[i] = {rin[7:0], rin[15:8], rin[23:16], rin[31:24]};
+    end
+    $fclose(fd);
   end
 
   assign data = mem[addr];
