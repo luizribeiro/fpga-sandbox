@@ -23,6 +23,7 @@ module riscv (
   wire [11:0] s_imm;
   wire [20:0] j_imm;
   wire [12:0] b_imm;
+  wire [4:0] shamt;
   rom prog (
     .clk(clk),
     .addr(pc),
@@ -62,6 +63,7 @@ module riscv (
   assign s_imm = {inst[31:25], inst[11:7]};
   assign j_imm = {inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
   assign b_imm = {inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
+  assign shamt = inst[24:20];
 
   reg [31:0] stage;
   integer i;
@@ -134,9 +136,11 @@ module riscv (
             b <= regs[rs1];
             dest <= {3'b0, rd};
           end
-          // TODO: implement `SLLI:
-          // TODO: implement `SRLI:
-          // TODO: implement `SRAI:
+          `SLLI, `SRXI: begin
+            a <= regs[rs1];
+            b <= {27'b0, shamt[4:0]};
+            dest <= {3'b0, rd};
+          end
         endcase
       end
       `OP: begin
@@ -170,6 +174,8 @@ module riscv (
           `XORI: alu_ans <= a ^ b;
           `ORI: alu_ans <= a | b;
           `ANDI: alu_ans <= a & b;
+          `SLLI: alu_ans <= a << b;
+          `SRXI: alu_ans <= inst[30] ? a >>> b : a >> b;
         endcase
       end
       `OP: begin

@@ -40,21 +40,22 @@
 `define ORI      3'b110
 `define ANDI     3'b111
 `define SLLI     3'b001
+`define SRXI     3'b101
 // 0000000 shamt rs1 101 rd 0010011 SRLI
 // 0100000 shamt rs1 101 rd 0010011 SRAI
 
 // OP (funct3, funct7)
 `define OP       7'b0110011
-`define ADD      7'b0110011
-`define SUB      7'b0110011
-`define SLL      7'b0110011
-`define SLT      7'b0110011
-`define SLTU     7'b0110011
-`define XOR      7'b0110011
-`define SRL      7'b0110011
-`define SRA      7'b0110011
-`define OR       7'b0110011
-`define AND      7'b0110011
+`define ADD      3'b000
+`define SUB      3'b000
+`define SLL      3'b001
+`define SLT      3'b010
+`define SLTU     3'b011
+`define XOR      3'b100
+`define SRL      3'b101
+`define SRA      3'b101
+`define OR       3'b110
+`define AND      3'b111
 // 0000000 rs2 rs1 000 rd 0110011 ADD
 // 0100000 rs2 rs1 000 rd 0110011 SUB
 // 0000000 rs2 rs1 001 rd 0110011 SLL
