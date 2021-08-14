@@ -22,6 +22,7 @@ module riscv (
   wire [11:0] i_imm;
   wire [11:0] s_imm;
   wire [20:0] j_imm;
+  wire [12:0] b_imm;
   rom prog (
     .clk(clk),
     .addr(pc),
@@ -60,6 +61,7 @@ module riscv (
   assign i_imm = inst[31:20];
   assign s_imm = {inst[31:25], inst[11:7]};
   assign j_imm = {inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
+  assign b_imm = {inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
 
   reg [31:0] stage;
   integer i;
@@ -111,7 +113,7 @@ module riscv (
       `BRANCH: begin
         a <= regs[rs1];
         b <= regs[rs2];
-        branch_addr = pc + $signed({{11{j_imm[20]}}, j_imm});
+        branch_addr <= pc + $signed({{19{b_imm[12]}}, b_imm});
         dest <= 'hff;
       end
       `LOAD: begin
@@ -155,9 +157,9 @@ module riscv (
           `BEQ: alu_ans <= {31'b0, a == b};
           `BNE: alu_ans <= {31'b0, a != b};
           `BLT: alu_ans <= {31'b0, $signed(a) < $signed(b)};
-          `BGE: alu_ans <= {31'b0, $signed(a) > $signed(b)};
+          `BGE: alu_ans <= {31'b0, $signed(a) >= $signed(b)};
           `BLTU: alu_ans <= {31'b0, a < b};
-          `BGEU: alu_ans <= {31'b0, a > b};
+          `BGEU: alu_ans <= {31'b0, a >= b};
         endcase
       end
       `OP_IMM: begin
