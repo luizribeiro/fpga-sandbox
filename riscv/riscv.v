@@ -82,6 +82,7 @@ module riscv (
     // instruction fetch
     inst <= winst;
     mem_val <= wmem_val;
+    regs[0] <= 0;
   end
 
   always @(posedge stage[1]) begin
