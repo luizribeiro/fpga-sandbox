@@ -47,10 +47,10 @@ module riscv (
     .write_enable(mem_write),
     .addr(mem_addr),
     .data_in(mem_in),
-    .data_out(wmem_val)
+    .data_out(wmem_val),
+    .gpio(gpio)
   );
 
-  assign gpio = memory.mem['ha0];
   assign opcode = inst[6:0];
   assign rd = inst[11:7];
   assign rs1 = inst[19:15];

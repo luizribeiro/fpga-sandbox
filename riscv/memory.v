@@ -1,3 +1,4 @@
+`include "config.vh"
 `include "instructions.vh"
 
 `define MEM_SIZE 2047
@@ -7,6 +8,7 @@ module ram (
   input wire [2:0] write_enable,
   input wire [31:0] addr,
   input wire [31:0] data_in,
+  output wire [`MAX_GPIO:0] gpio,
   output wire [31:0] data_out
 );
   reg [7:0] mem [`MEM_SIZE:0];
@@ -32,6 +34,7 @@ module ram (
   end
 
   assign data_out = {mem[addr], mem[addr + 1], mem[addr + 2], mem[addr + 3]};
+  assign gpio = mem['ha0];
 endmodule
 
 module rom (
