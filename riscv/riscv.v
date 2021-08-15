@@ -34,7 +34,6 @@ module riscv (
   reg [`WORD:0] a;
   reg [`WORD:0] b;
   reg [`WORD:0] alu_ans;
-  reg [7:0] dest;
   reg [`WORD:0] branch_addr;
 
   reg [`WORD:0] mem_addr;
@@ -72,7 +71,6 @@ module riscv (
     pc = 'h0;
     mem_write = 3'b0;
     mem_addr = 'h0;
-    dest = 'hff;
     stage = 'b1;
 
     for (i = 0; i <= `LAST_REG; i++)
@@ -86,7 +84,6 @@ module riscv (
     // instruction fetch
     inst <= winst;
     mem_val <= wmem_val;
-    regs[0] <= 0;
   end
 
   always @(posedge stage[1]) begin
@@ -95,38 +92,31 @@ module riscv (
       `LUI: begin
         a <= {u_imm, 12'b0};
         b <= 'b0;
-        dest <= {3'b0, rd};
       end
       `AUIPC: begin
         a <= pc;
         b <= {u_imm, 12'b0};
-        dest <= {3'b0, rd};
       end
       `JAL: begin
         a <= pc;
         b <= $signed({{11{j_imm[20]}}, j_imm});
-        dest <= {3'b0, rd};
       end
       `JALR: begin
         a <= regs[rs1];
         b <= $signed({{20{i_imm[11]}}, i_imm});
-        dest <= {3'b0, rd};
       end
       `BRANCH: begin
         a <= regs[rs1];
         b <= regs[rs2];
         branch_addr <= pc + $signed({{19{b_imm[12]}}, b_imm});
-        dest <= 'hff;
       end
       `LOAD: begin
         a <= regs[rs1];
         b <= $signed({{20{i_imm[11]}}, i_imm});
-        dest <= {3'b0, rd};
       end
       `STORE: begin
         a <= regs[rs1];
         b <= $signed({{20{s_imm[11]}}, s_imm});
-        dest <= 'hff;
         mem_in <= regs[rs2];
       end
       `OP_IMM: begin
@@ -134,19 +124,16 @@ module riscv (
           `ADDI, `SLTI, `SLTIU, `XORI, `ORI, `ANDI: begin
             a <= {{20{i_imm[11]}}, i_imm[11:0]};
             b <= regs[rs1];
-            dest <= {3'b0, rd};
           end
           `SLLI, `SRXI: begin
             a <= regs[rs1];
             b <= {27'b0, shamt[4:0]};
-            dest <= {3'b0, rd};
           end
         endcase
       end
       `OP: begin
         a <= regs[rs1];
         b <= regs[rs2];
-        dest <= {3'b0, rd};
       end
     endcase
   end
@@ -219,19 +206,19 @@ module riscv (
     case (opcode)
       `JAL, `JALR: begin
         pc <= alu_ans;
-        regs[dest[4:0]] <= alu_ans;
+        if(rd != 5'b0) regs[rd] <= alu_ans;
       end
       `AUIPC, `LUI: begin
-        regs[dest[4:0]] <= alu_ans;
+        if(rd != 5'b0) regs[rd] <= alu_ans;
         pc <= pc + 4;
       end
       `BRANCH: pc <= alu_ans[0] ? branch_addr : pc + 4;
       `LOAD: begin
-        case (funct3)
-          `LB: regs[dest[4:0]] <= {{24{mem_val[7]}}, mem_val[7:0]};
-          `LW: regs[dest[4:0]] <= mem_val;
-          `LBU: regs[dest[4:0]] <= {24'b0, mem_val[7:0]};
-          `LHU: regs[dest[4:0]] <= {16'b0, mem_val[15:0]};
+        if(rd != 5'b0) case (funct3)
+          `LB: regs[rd] <= {{24{mem_val[7]}}, mem_val[7:0]};
+          `LW: regs[rd] <= mem_val;
+          `LBU: regs[rd] <= {24'b0, mem_val[7:0]};
+          `LHU: regs[rd] <= {16'b0, mem_val[15:0]};
         endcase
         pc <= pc + 4;
       end
@@ -242,7 +229,7 @@ module riscv (
         pc <= pc + 4;
       end
       `OP_IMM, `OP: begin
-        regs[dest[4:0]] <= alu_ans;
+        if(rd != 5'b0) regs[rd] <= alu_ans;
         pc <= pc + 4;
       end
       default: pc <= pc + 4;
