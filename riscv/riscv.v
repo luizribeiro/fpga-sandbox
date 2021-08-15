@@ -146,7 +146,7 @@ module riscv (
       `OP: begin
         a <= regs[rs1];
         b <= regs[rs2];
-        dest <= regs[rd];
+        dest <= {3'b0, rd};
       end
     endcase
   end
