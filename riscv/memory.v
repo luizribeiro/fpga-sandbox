@@ -41,17 +41,11 @@ module rom (
 );
   reg [31:0] mem [1023:0];
 
-  reg [31:0] rin;
-  integer i, fd, cnt;
+  integer i;
   initial begin
     for (i = 0; i <= 1023; i++)
       mem[i] = 32'b0;
-    fd = $fopen("hello.bin", "rb");
-    for (i = 0; !$feof(fd); i++) begin
-      cnt = $fread(rin, fd);
-      mem[i] = {rin[7:0], rin[15:8], rin[23:16], rin[31:24]};
-    end
-    $fclose(fd);
+    $readmemh("hello.mem", mem);
   end
 
   assign data = mem[addr >> 2];
