@@ -37,8 +37,7 @@ module riscv (
   reg [`WORD:0] branch_addr;
 
   reg [`WORD:0] mem_addr;
-  reg [`WORD:0] mem_val;
-  wire [`WORD:0] wmem_val;
+  wire [`WORD:0] mem_val;
   reg [`WORD:0] mem_in;
   reg [2:0] mem_write;
   ram memory (
@@ -46,7 +45,7 @@ module riscv (
     .write_enable(mem_write),
     .addr(mem_addr),
     .data_in(mem_in),
-    .data_out(wmem_val),
+    .data_out(mem_val),
     .gpio(gpio)
   );
 
@@ -83,7 +82,6 @@ module riscv (
   always @(posedge stage[0]) begin
     // instruction fetch
     inst <= winst;
-    mem_val <= wmem_val;
   end
 
   always @(posedge stage[1]) begin
