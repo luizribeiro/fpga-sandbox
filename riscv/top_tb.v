@@ -49,22 +49,21 @@ module tb();
     `assert(cpu.regs[1] == 'h00, "x1 should originally be 0x00");
     `assert(cpu.regs[2] == 'h00, "x2 should originally be 0x00");
     `assert(
-      ({cpu.memory.mem[0], cpu.memory.mem[1], cpu.memory.mem[2], cpu.memory.mem[3]}
-        == 'h00),
+      (cpu.memory.mem[0] == 'h00),
       "Memory address 0x00 should be initially set to 0x00"
     );
 
-    repeat(3 * CYCLES) @(negedge clk);
-    `assert(cpu.stage == 'b10000, "Expected stage 5");
-    `assert(cpu.pc == 'h04, "Expected PC to be set to 0x04 on stage 5");
+    repeat(4 * CYCLES) @(negedge clk);
+    `assert(cpu.stage == 'b00001, "Expected stage 1");
+    `assert(cpu.pc == 'h04, "Expected PC=0x04");
     `assert(
       (cpu.regs[1] == {20'h1f, 12'h00}),
       "x1's 20 upper bits should be loaded with 0x1f"
     );
 
     repeat(5 * CYCLES) @(negedge clk);
-    `assert(cpu.stage == 'b10000, "Expected stage 5 again");
-    `assert(cpu.pc == 'h08, "Expected PC to be set to 0x08 on stage 5");
+    `assert(cpu.stage == 'b00001, "Expected stage 1 again");
+    `assert(cpu.pc == 'h08, "Expected PC=0x08");
     `assert(cpu.opcode == `LUI, "Expected LUI opcode @ PC=0x01");
     `assert(
       (cpu.regs[2] == {20'hf1, 12'h00}),
@@ -72,19 +71,18 @@ module tb();
     );
 
     repeat(5 * CYCLES) @(negedge clk);
-    `assert(cpu.stage == 'b10000, "Expected stage 5 again");
-    `assert(cpu.pc == 'h0c, "Expected PC to be set to 0x0C on stage 5");
+    `assert(cpu.stage == 'b00001, "Expected stage 1 again");
+    `assert(cpu.pc == 'h0c, "Expected PC=0x0C");
     `assert(cpu.opcode == `STORE, "Expected STORE opcode @ PC=0x02");
     `assert(
-      ({cpu.memory.mem[0], cpu.memory.mem[1], cpu.memory.mem[2], cpu.memory.mem[3]}
-        == {20'h1f, 12'h00}),
+      (cpu.memory.mem[0] == {20'h1f, 12'h00}),
       "Memory address 0x00 should be loaded with x1's contents"
     );
 
     `assert(cpu.regs[3] == 32'h00, "Expected x3 to be initially set to 0x00");
     repeat(5 * CYCLES) @(negedge clk);
-    `assert(cpu.stage == 'b10000, "Expected stage 5 again");
-    `assert(cpu.pc == 'h10, "Expected PC to be set to 0x10 on stage 5");
+    `assert(cpu.stage == 'b00001, "Expected stage 1 again");
+    `assert(cpu.pc == 'h10, "Expected PC=0x10");
     `assert(cpu.opcode == `LOAD, "Expected LOAD opcode @ PC=0x03");
     `assert(
       (cpu.regs[3] == {20'h1f, 12'h00}),
@@ -92,7 +90,7 @@ module tb();
     );
 
     repeat(27 * 5 * CYCLES) @(negedge clk);
-    `assert(cpu.pc == 31*4, "Expected PC=124 on stage 5");
+    `assert(cpu.pc == 31*4, "Expected PC=124");
     `assert(cpu.opcode == 7'b0, "Expected nil opcode");
 
     repeat(5 * CYCLES) @(negedge clk);

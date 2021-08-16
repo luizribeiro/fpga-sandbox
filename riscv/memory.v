@@ -1,7 +1,7 @@
 `include "config.vh"
 `include "instructions.vh"
 
-`define MEM_SIZE 2047
+`define MEM_SIZE 511
 
 module ram (
   input wire clk,
@@ -11,30 +11,45 @@ module ram (
   output wire [`MAX_GPIO:0] gpio,
   output wire [31:0] data_out
 );
-  reg [7:0] mem [`MEM_SIZE:0];
+  reg [31:0] mem [`MEM_SIZE:0];
+  reg [31:0] out;
   integer i;
+
+  wire [31:0] data = mem[addr[10:2]];
 
   initial begin
     for (i = 0; i <= `MEM_SIZE; i++)
-      mem[i] = 8'b0;
+      mem[i] = 32'b0;
   end
 
   always @(posedge clk) begin
+    out <= addr[1]
+      ? (addr[0] ? (data >> 24) : (data >> 16))
+      : (addr[0] ? (data >> 8) : data);
+
     if (write_enable[0]) begin
-      mem[addr] <= data_in[31:24];
-      mem[addr + 1] <= data_in[23:16];
-      mem[addr + 2] <= data_in[15:8];
-      mem[addr + 3] <= data_in[7:0];
+      mem[addr[10:2]] <= data_in;
     end else if (write_enable[1]) begin
-      mem[addr] <= data_in[15:8];
-      mem[addr + 1] <= data_in[7:0];
+      mem[addr[10:2]] <= addr[1]
+        ? {data_in[15:0], data[15:0]}
+        : {data[31:16], data_in[15:0]};
     end else if (write_enable[2]) begin
-      mem[addr] <= data_in[7:0];
+      mem[addr[10:2]] <= addr[1]
+        ? (
+          addr[0]
+          ? {data_in[7:0], data[23:0]}
+          : {data[31:24], data[7:0], data[15:0]}
+        )
+        : (
+          addr[0]
+          ? {data[31:16], data_in[7:0], data[7:0]}
+          : {data[31:8], data_in[7:0]}
+        );
     end
   end
 
-  assign data_out = {mem[addr], mem[addr + 1], mem[addr + 2], mem[addr + 3]};
-  assign gpio = mem['ha0];
+  assign gpio = mem['ha0][7:0];
+  assign data_out = out;
 endmodule
 
 module rom (
