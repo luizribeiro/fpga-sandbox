@@ -3,7 +3,7 @@ module top (
   output wire gpio_46,
   output wire gpio_47,
   output wire gpio_45,
-  output wire gpio_28,
+  output wire gpio_48,
   output wire gpio_3,
   output wire gpio_4,
   output wire gpio_44
@@ -19,7 +19,7 @@ module top (
       gpio_46,
       gpio_47,
       gpio_45,
-      gpio_28,
+      gpio_48,
       gpio_3,
       gpio_4,
       gpio_44
