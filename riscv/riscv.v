@@ -38,15 +38,13 @@ module riscv (
   wire [`WORD:0] mem_out;
   reg [`WORD:0] mem_in;
   reg [2:0] mem_write;
-  wire [`MAX_GPIO:0] wgpio; // FIXME
-  assign gpio = regs[15][7:0]; // FIXME
   ram memory (
     .clk(clk),
     .write_enable(mem_write),
     .addr(alu_ans),
     .data_in(mem_in),
     .data_out(mem_out),
-    .gpio(wgpio)
+    .gpio(gpio)
   );
 
   reg [31:0] stage;

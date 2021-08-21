@@ -48,7 +48,7 @@ module ram (
     end
   end
 
-  assign gpio = mem['ha0][7:0];
+  assign gpio = mem['ha0 >> 2][7:0];
   assign data_out = out;
 endmodule
 
