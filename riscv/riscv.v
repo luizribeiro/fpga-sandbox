@@ -9,25 +9,24 @@ module riscv (
   reg [`WORD:0] regs [`LAST_REG:0];
 
   reg [`WORD:0] pc;
-  reg [`WORD:0] inst;
-  wire [`WORD:0] winst;
-  wire [6:0] opcode;
-  wire [4:0] rd;
-  wire [4:0] rs1;
-  wire [4:0] rs2;
-  wire [2:0] funct3;
-  wire [6:0] funct7;
-  wire [11:0] funct12;
-  wire [19:0] u_imm;
-  wire [11:0] i_imm;
-  wire [11:0] s_imm;
-  wire [20:0] j_imm;
-  wire [12:0] b_imm;
-  wire [4:0] shamt;
+  wire [`WORD:0] inst;
+  reg [6:0] opcode;
+  reg [4:0] rd;
+  reg [4:0] rs1;
+  reg [4:0] rs2;
+  reg [2:0] funct3;
+  reg [6:0] funct7;
+  reg [11:0] funct12;
+  reg [19:0] u_imm;
+  reg [11:0] i_imm;
+  reg [11:0] s_imm;
+  reg [20:0] j_imm;
+  reg [12:0] b_imm;
+  reg [4:0] shamt;
   rom prog (
     .clk(clk),
     .addr(pc),
-    .data(winst)
+    .data(inst)
   );
 
   // alu
@@ -50,20 +49,6 @@ module riscv (
     .gpio(wgpio)
   );
 
-  assign opcode = inst[6:0];
-  assign rd = inst[11:7];
-  assign rs1 = inst[19:15];
-  assign rs2 = inst[24:20];
-  assign funct3 = inst[14:12];
-  assign funct7 = inst[31:25];
-  assign funct12 = inst[31:20];
-  assign u_imm = inst[31:12];
-  assign i_imm = inst[31:20];
-  assign s_imm = {inst[31:25], inst[11:7]};
-  assign j_imm = {inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
-  assign b_imm = {inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
-  assign shamt = inst[24:20];
-
   reg [31:0] stage;
   integer i;
 
@@ -78,7 +63,21 @@ module riscv (
     stage <= stage[4] ? 'b1 : stage << 1;
 
     // instruction fetch
-    if (stage[0]) inst <= winst;
+    if (stage[0]) begin
+      opcode <= inst[6:0];
+      rd <= inst[11:7];
+      rs1 <= inst[19:15];
+      rs2 <= inst[24:20];
+      funct3 <= inst[14:12];
+      funct7 <= inst[31:25];
+      funct12 <= inst[31:20];
+      u_imm <= inst[31:12];
+      i_imm <= inst[31:20];
+      s_imm <= {inst[31:25], inst[11:7]};
+      j_imm <= {inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
+      b_imm <= {inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
+      shamt <= inst[24:20];
+    end
 
     // instruction decode
     if (stage[1]) begin
@@ -155,7 +154,7 @@ module riscv (
             `ORI: alu_ans <= a | b;
             `ANDI: alu_ans <= a & b;
             `SLLI: alu_ans <= a << b;
-            `SRXI: alu_ans <= inst[30] ? a >>> b : a >> b;
+            `SRXI: alu_ans <= i_imm[10] ? a >>> b : a >> b;
           endcase
         end
         `OP: begin

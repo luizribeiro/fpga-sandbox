@@ -63,7 +63,13 @@ module rom (
   initial begin
     for (i = 0; i <= 1023; i++)
       mem[i] = 32'b0;
-    $readmemh("hello.mem", mem);
+    // this isn't synthesizing properly, though it works on simulator
+    // https://github.com/YosysHQ/yosys/issues/2833
+    //$readmemh("hello.mem", mem);
+    mem[0] = 'h00000793;
+    mem[1] = 'h0af00023;
+    mem[2] = 'h00178793;
+    mem[3] = 'hff9ff06f;
   end
 
   assign data = mem[addr >> 2];
