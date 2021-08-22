@@ -7,6 +7,8 @@ SECTIONS
 {
     .text :
     {
+      *(.init)
+      *(.text)
     } > rom
 
     /DISCARD/ : {

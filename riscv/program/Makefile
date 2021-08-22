@@ -11,19 +11,25 @@ hello.s: hello.c
 		-fno-common -fno-builtin-printf -S -Og \
 		-o $(WORKDIR)/hello.s $(WORKDIR)/hello.c
 
+boot.o: boot.s
+	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
+		riscv32-unknown-elf-gcc \
+		-march=rv32i -mabi=ilp32 \
+		-c $(WORKDIR)/boot.s
+
 hello.o: hello.s
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
 		-march=rv32i -mabi=ilp32 \
 		-c $(WORKDIR)/hello.s
 
-hello.elf: hello.o riscv.ld
+hello.elf: hello.o boot.o riscv.ld
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
 		-march=rv32i -mabi=ilp32 \
 		-static -T riscv.ld \
 		-nostdlib \
-		-o $(WORKDIR)/hello.elf $(WORKDIR)/hello.o
+		-o $(WORKDIR)/hello.elf $(WORKDIR)/hello.o $(WORKDIR)/boot.o
 
 hello.bin: hello.elf
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \

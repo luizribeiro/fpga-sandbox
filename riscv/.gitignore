@@ -3,4 +3,4 @@ program/*.bin
 program/*.elf
 program/*.mem
 program/*.o
-program/*.s
+program/hello.s
