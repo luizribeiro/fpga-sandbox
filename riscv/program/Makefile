@@ -7,20 +7,20 @@ all: hello.elf hello.mem
 hello.s: hello.c
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
-		-march=rv32im -mabi=ilp32 \
+		-march=rv32i -mabi=ilp32 \
 		-fno-common -fno-builtin-printf -S -Og \
 		-o $(WORKDIR)/hello.s $(WORKDIR)/hello.c
 
 hello.o: hello.s
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
-		-march=rv32im -mabi=ilp32 \
+		-march=rv32i -mabi=ilp32 \
 		-c $(WORKDIR)/hello.s
 
 hello.elf: hello.o riscv.ld
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
-		-march=rv32im -mabi=ilp32 \
+		-march=rv32i -mabi=ilp32 \
 		-static -T riscv.ld \
 		-nostdlib \
 		-o $(WORKDIR)/hello.elf $(WORKDIR)/hello.o
