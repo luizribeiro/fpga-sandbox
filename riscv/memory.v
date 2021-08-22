@@ -16,7 +16,7 @@ module ram (
   reg [31:0] out;
   integer i;
 
-  wire [31:0] data = mem[addr[10:2]];
+  wire [31:0] data = mem[addr[11:2]];
   reg [31:0] gpio_data;
 
   initial begin
@@ -31,14 +31,14 @@ module ram (
       : (addr[0] ? (data >> 8) : data);
 
     if (write_enable[0]) begin
-      mem[addr[10:2]] <= data_in;
+      mem[addr[11:2]] <= data_in;
     end else if (write_enable[1]) begin
-      mem[addr[10:2]] <= addr[1]
+      mem[addr[11:2]] <= addr[1]
         ? {data_in[15:0], data[15:0]}
         : {data[31:16], data_in[15:0]};
     end else if (write_enable[2]) begin
       if (addr == 'ha0) gpio_data <= data_in;
-      else mem[addr[10:2]] <= addr[1]
+      else mem[addr[11:2]] <= addr[1]
         ? (
           addr[0]
           ? {data_in[7:0], data[23:0]}
