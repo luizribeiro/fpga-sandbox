@@ -46,7 +46,7 @@ clean:
 
 dump: hello.elf
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
-		riscv32-unknown-elf-objdump -D -l $(WORKDIR)/hello.elf
+		riscv32-unknown-elf-objdump -sdl $(WORKDIR)/hello.elf
 
 docker-image:
 	docker build -t riscv-gnu-toolchain .
