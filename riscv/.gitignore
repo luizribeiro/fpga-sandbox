@@ -1,0 +1,6 @@
+../.ccls-cache/
+program/*.bin
+program/*.elf
+program/*.mem
+program/*.o
+program/*.s

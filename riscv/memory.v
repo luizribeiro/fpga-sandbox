@@ -1,7 +1,8 @@
 `include "config.vh"
 `include "instructions.vh"
 
-`define MEM_SIZE 511
+// 4 KiB
+`define MEM_SIZE 1023
 
 module ram (
   input wire clk,
@@ -16,10 +17,12 @@ module ram (
   integer i;
 
   wire [31:0] data = mem[addr[10:2]];
+  reg [31:0] gpio_data;
 
   initial begin
     for (i = 0; i <= `MEM_SIZE; i++)
       mem[i] = 32'b0;
+    gpio_data = 32'b0;
   end
 
   always @(posedge clk) begin
@@ -34,7 +37,8 @@ module ram (
         ? {data_in[15:0], data[15:0]}
         : {data[31:16], data_in[15:0]};
     end else if (write_enable[2]) begin
-      mem[addr[10:2]] <= addr[1]
+      if (addr == 'ha0) gpio_data <= data_in;
+      else mem[addr[10:2]] <= addr[1]
         ? (
           addr[0]
           ? {data_in[7:0], data[23:0]}
@@ -48,7 +52,7 @@ module ram (
     end
   end
 
-  assign gpio = mem['ha0 >> 2][7:0];
+  assign gpio = gpio_data[7:0];
   assign data_out = out;
 endmodule
 
@@ -57,20 +61,10 @@ module rom (
   input wire [31:0] addr,
   output wire [31:0] data
 );
-  reg [31:0] mem [1023:0];
+  reg [31:0] mem [255:0]; // 1 KiB
 
   integer i;
-  initial begin
-    for (i = 0; i <= 1023; i++)
-      mem[i] = 32'b0;
-    // this isn't synthesizing properly, though it works on simulator
-    // https://github.com/YosysHQ/yosys/issues/2833
-    //$readmemh("hello.mem", mem);
-    mem[0] = 'h00000793;
-    mem[1] = 'h0af00023;
-    mem[2] = 'h00178793;
-    mem[3] = 'hff9ff06f;
-  end
+  initial $readmemh("program/hello.mem", mem);
 
   assign data = mem[addr >> 2];
 endmodule
