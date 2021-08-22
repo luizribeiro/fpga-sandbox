@@ -35,5 +35,9 @@ hello.mem: hello.bin
 clean:
 	rm -f hello.s hello.o hello.elf hello.bin hello.mem
 
+dump: hello.o
+	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
+		riscv32-unknown-elf-objdump -D -l $(WORKDIR)/hello.o
+
 docker-image:
 	docker build -t riscv-gnu-toolchain .
