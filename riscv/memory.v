@@ -1,8 +1,8 @@
 `include "config.vh"
 `include "instructions.vh"
 
-// 4 KiB
-`define MEM_SIZE 1023
+// 8 KiB
+`define MEM_SIZE 2047
 
 module ram (
   input wire clk,
@@ -16,14 +16,8 @@ module ram (
   reg [31:0] out;
   integer i;
 
-  wire [31:0] data = mem[addr[11:2]];
+  wire [31:0] data = mem[addr[12:2]];
   reg [31:0] gpio_data;
-
-  initial begin
-    for (i = 0; i <= `MEM_SIZE; i++)
-      mem[i] = 32'b0;
-    gpio_data = 32'b0;
-  end
 
   always @(posedge clk) begin
     out <= addr[1]
@@ -31,14 +25,14 @@ module ram (
       : (addr[0] ? (data >> 8) : data);
 
     if (write_enable[0]) begin
-      mem[addr[11:2]] <= data_in;
+      mem[addr[12:2]] <= data_in;
     end else if (write_enable[1]) begin
-      mem[addr[11:2]] <= addr[1]
+      mem[addr[12:2]] <= addr[1]
         ? {data_in[15:0], data[15:0]}
         : {data[31:16], data_in[15:0]};
     end else if (write_enable[2]) begin
       if (addr == 'ha0) gpio_data <= data_in;
-      else mem[addr[11:2]] <= addr[1]
+      else mem[addr[12:2]] <= addr[1]
         ? (
           addr[0]
           ? {data_in[7:0], data[23:0]}
