@@ -22,13 +22,14 @@ hello.elf: hello.o
 		riscv32-unknown-elf-gcc \
 		-march=rv32im -mabi=ilp32 \
 		-static \
+		-nostdlib \
 		-o $(WORKDIR)/hello.elf $(WORKDIR)/hello.o
 
-hello.bin: hello.o
+hello.bin: hello.elf
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-objcopy -O binary \
 		--only-section=.text \
-		$(WORKDIR)/hello.o \
+		$(WORKDIR)/hello.elf \
 		$(WORKDIR)/hello.bin
 
 hello.mem: hello.bin
@@ -37,9 +38,9 @@ hello.mem: hello.bin
 clean:
 	rm -f hello.s hello.o hello.elf hello.bin hello.mem
 
-dump: hello.o
+dump: hello.elf
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
-		riscv32-unknown-elf-objdump -D -l $(WORKDIR)/hello.o
+		riscv32-unknown-elf-objdump -D -l $(WORKDIR)/hello.elf
 
 docker-image:
 	docker build -t riscv-gnu-toolchain .
