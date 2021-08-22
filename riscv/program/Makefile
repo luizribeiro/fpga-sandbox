@@ -1,5 +1,7 @@
 WORKDIR="/work"
 
+.PHONY: all clean dump docker-image
+
 all: hello.elf hello.mem
 
 hello.s: hello.c
