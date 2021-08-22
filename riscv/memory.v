@@ -1,9 +1,6 @@
 `include "config.vh"
 `include "instructions.vh"
 
-// 8 KiB
-`define MEM_SIZE 2047
-
 module ram (
   input wire clk,
   input wire [2:0] write_enable,
@@ -12,7 +9,7 @@ module ram (
   output wire [`MAX_GPIO:0] gpio,
   output wire [31:0] data_out
 );
-  reg [31:0] mem [`MEM_SIZE:0];
+  reg [31:0] mem [`RAM_SIZE:0];
   reg [31:0] out;
   integer i;
 
@@ -56,7 +53,7 @@ module rom (
   input wire [31:0] addr,
   output wire [31:0] data
 );
-  reg [31:0] mem [255:0]; // 1 KiB
+  reg [31:0] mem [`ROM_SIZE:0];
 
   integer i;
   initial $readmemh("firmware/hello.mem", mem);
