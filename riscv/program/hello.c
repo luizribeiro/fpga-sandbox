@@ -1,11 +1,12 @@
-#define GPIO (*(unsigned char *)0xa0)
+#include "riscv.h"
 
 void main(void) {
-  int a = 0, b = 1, c;
   for (;;) {
-    c = a + b;
-    GPIO = ((unsigned char)(c));
-    a = b;
-    b = c;
+    for (int i = 0; i < 8; i++) {
+      GPIO = 1 << i;
+    }
+    __asm("nop");
+    __asm("nop");
+    GPIO = 0;
   }
 }

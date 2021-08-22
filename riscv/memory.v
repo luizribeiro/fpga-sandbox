@@ -31,7 +31,8 @@ module ram (
         ? {data_in[15:0], data[15:0]}
         : {data[31:16], data_in[15:0]};
     end else if (write_enable[2]) begin
-      if (addr == 'ha0) gpio_data <= data_in;
+      // iodev starts at 0x20000000
+      if (addr[29]) gpio_data <= data_in;
       else mem[addr[12:2]] <= addr[1]
         ? (
           addr[0]
