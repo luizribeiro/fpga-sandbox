@@ -190,7 +190,7 @@ module riscv (
     // write back
     if (stage[4]) begin
       case (opcode)
-        `JAL, `JALR: if (rd != 5'b0) regs[rd] <= alu_ans;
+        `JAL, `JALR: if (rd != 5'b0) regs[rd] <= pc + 4;
         `AUIPC, `LUI: if (rd != 5'b0) regs[rd] <= alu_ans;
         `LOAD: begin
           if (rd != 5'b0) begin
