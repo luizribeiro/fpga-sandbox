@@ -59,7 +59,7 @@ module rom (
   reg [31:0] mem [255:0]; // 1 KiB
 
   integer i;
-  initial $readmemh("program/hello.mem", mem);
+  initial $readmemh("firmware/hello.mem", mem);
 
   assign data = mem[addr >> 2];
 endmodule

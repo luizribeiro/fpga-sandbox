@@ -1,6 +1,6 @@
 ../.ccls-cache/
-program/*.bin
-program/*.elf
-program/*.mem
-program/*.o
-program/hello.s
+firmware/*.bin
+firmware/*.elf
+firmware/*.mem
+firmware/*.o
+firmware/hello.s
