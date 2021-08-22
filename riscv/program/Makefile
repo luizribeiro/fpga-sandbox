@@ -17,11 +17,11 @@ hello.o: hello.s
 		-march=rv32im -mabi=ilp32 \
 		-c $(WORKDIR)/hello.s
 
-hello.elf: hello.o
+hello.elf: hello.o riscv.ld
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
 		-march=rv32im -mabi=ilp32 \
-		-static \
+		-static -T riscv.ld \
 		-nostdlib \
 		-o $(WORKDIR)/hello.elf $(WORKDIR)/hello.o
 
