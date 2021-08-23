@@ -7,18 +7,20 @@ module ram (
   input wire [2:0] write_enable,
   input wire [31:0] addr,
   input wire [31:0] data_in,
-  output reg [31:0] data_out
+  output wire [31:0] data_out
 );
   reg [31:0] mem [`RAM_SIZE:0];
+  assign data_out = en
+    ? (
+      addr[1]
+        ? (addr[0] ? (data >> 24) : (data >> 16))
+        : (addr[0] ? (data >> 8) : data)
+    ) : 'hzz;
   integer i;
 
   wire [31:0] data = mem[addr[12:2]];
 
   always @(posedge clk) if (en) begin
-    data_out <= addr[1]
-      ? (addr[0] ? (data >> 24) : (data >> 16))
-      : (addr[0] ? (data >> 8) : data);
-
     if (write_enable[0]) begin
       mem[addr[12:2]] <= data_in;
     end else if (write_enable[1]) begin
@@ -46,16 +48,14 @@ module rom (
   input wire en,
   input wire [31:0] iaddr,
   input wire [31:0] addr,
-  output reg [31:0] data_out,
+  output wire [31:0] data_out,
   output wire [31:0] inst
 );
   reg [31:0] mem [`ROM_SIZE:0];
+  assign data_out = en ? mem[addr[9:2]] : 'hzz;
 
   integer i;
   initial $readmemh("firmware/hello.mem", mem);
-
-  always @(posedge clk)
-    if (en) data_out <= mem[addr[9:2]];
 
   assign inst = mem[iaddr >> 2];
 endmodule
@@ -66,16 +66,15 @@ module iodev (
   input wire [2:0] write_enable,
   input wire [31:0] addr,
   input wire [31:0] data_in,
-  output reg [31:0] data_out,
+  output wire [31:0] data_out,
   output wire [`MAX_GPIO:0] gpio
 );
+  assign data_out = en ? gpio_data : 'hzz;
   reg [31:0] gpio_data;
 
   assign gpio = gpio_data[7:0];
 
   always @(posedge clk) if (en) begin
-    data_out <= gpio_data;
-
     // FIXME: for now only support writing by bytes
     if (write_enable[2]) gpio_data <= data_in;
   end
@@ -88,7 +87,7 @@ module memory (
   input wire [31:0] addr,
   input wire [31:0] data_in,
   output wire [`MAX_GPIO:0] gpio,
-  output reg [31:0] data_out,
+  output wire [31:0] data_out,
   output wire [31:0] inst
 );
   rom rom (

@@ -32,12 +32,12 @@ module tb();
 
   initial begin
     for (i = 0; i <= 1023; i++)
-      cpu.prog.mem[i] = 32'b0;
-    cpu.prog.mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
-    cpu.prog.mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
-    cpu.prog.mem[2] = {7'h0, 5'h1, 5'h0, `SW, 5'h0, `STORE}; // sw x1, 0(x0)
-    cpu.prog.mem[3] = {12'h0, 5'd0, `LW, 5'd3, `LOAD}; // lw x3, 0(x0)
-    cpu.prog.mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
+      cpu.memory.rom.mem[i] = 32'b0;
+    cpu.memory.rom.mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
+    cpu.memory.rom.mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
+    cpu.memory.rom.mem[2] = {7'h0, 5'h1, 5'h0, `SW, 5'h0, `STORE}; // sw x1, 0(x0)
+    cpu.memory.rom.mem[3] = {12'h0, 5'd0, `LW, 5'd3, `LOAD}; // lw x3, 0(x0)
+    cpu.memory.rom.mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
 
     `assert(cpu.stage == 'b00001, "Expected stage 1");
     `assert(cpu.pc == 'h00, "Expected PC=0 on stage 1");
@@ -49,7 +49,7 @@ module tb();
     `assert(cpu.regs[1] == 'h00, "x1 should originally be 0x00");
     `assert(cpu.regs[2] == 'h00, "x2 should originally be 0x00");
     `assert(
-      (cpu.memory.mem[0] == 'h00),
+      (cpu.memory.ram.mem[0] == 'h00),
       "Memory address 0x00 should be initially set to 0x00"
     );
 
@@ -75,7 +75,7 @@ module tb();
     `assert(cpu.pc == 'h0c, "Expected PC=0x0C");
     `assert(cpu.opcode == `STORE, "Expected STORE opcode @ PC=0x02");
     `assert(
-      (cpu.memory.mem[0] == {20'h1f, 12'h00}),
+      (cpu.memory.ram.mem[0] == {20'h1f, 12'h00}),
       "Memory address 0x00 should be loaded with x1's contents"
     );
 
