@@ -11,35 +11,22 @@ module riscv (
   reg [`WORD:0] pc;
   wire [`WORD:0] inst;
   reg [6:0] opcode;
-  reg [4:0] rd;
-  reg [4:0] rs1;
-  reg [4:0] rs2;
+  reg [4:0] rd, rs1, rs2;
   reg [2:0] funct3;
   reg [6:0] funct7;
-  reg [11:0] funct12;
-  reg [19:0] u_imm;
-  reg [11:0] i_imm;
-  reg [11:0] s_imm;
-  reg [20:0] j_imm;
+  reg [11:0] funct12, i_imm, s_imm;
   reg [12:0] b_imm;
+  reg [19:0] u_imm;
+  reg [20:0] j_imm;
   reg [4:0] shamt;
-  rom prog (
-    .clk(clk),
-    .addr(pc),
-    .data(inst)
-  );
 
-  // alu
-  reg [`WORD:0] a;
-  reg [`WORD:0] b;
-  reg [`WORD:0] alu_ans;
-  reg [`WORD:0] branch_addr;
-
-  wire [`WORD:0] mem_out;
-  reg [`WORD:0] mem_in;
+  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_in;
   reg [2:0] mem_write;
-  ram memory (
+  wire [`WORD:0] mem_out;
+  memory memory (
     .clk(clk),
+    .iaddr(pc),
+    .inst(inst),
     .write_enable(mem_write),
     .addr(alu_ans),
     .data_in(mem_in),
@@ -47,18 +34,18 @@ module riscv (
     .gpio(gpio)
   );
 
-  reg [31:0] stage;
+  reg [4:0] stage;
   integer i;
 
   initial begin
     pc = 'h0;
     mem_write = 3'b0;
-    stage = 'b1;
-    for (i = 0; i <= `LAST_REG; i++) regs[i] = 32'd0;
+    stage = 5'b1;
+    regs[0] = 'd0;
   end
 
   always @(posedge clk) begin
-    stage <= stage[4] ? 'b1 : stage << 1;
+    stage <= stage[4] ? 5'b1 : stage << 1;
 
     // instruction fetch
     if (stage[0]) begin

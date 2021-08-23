@@ -3,10 +3,10 @@
 
 module ram (
   input wire clk,
+  input wire en,
   input wire [2:0] write_enable,
   input wire [31:0] addr,
   input wire [31:0] data_in,
-  output wire [`MAX_GPIO:0] gpio,
   output wire [31:0] data_out
 );
   reg [31:0] mem [`RAM_SIZE:0];
@@ -14,9 +14,8 @@ module ram (
   integer i;
 
   wire [31:0] data = mem[addr[12:2]];
-  reg [31:0] gpio_data;
 
-  always @(posedge clk) begin
+  always @(posedge clk) if (en) begin
     out <= addr[1]
       ? (addr[0] ? (data >> 24) : (data >> 16))
       : (addr[0] ? (data >> 8) : data);
@@ -28,9 +27,7 @@ module ram (
         ? {data_in[15:0], data[15:0]}
         : {data[31:16], data_in[15:0]};
     end else if (write_enable[2]) begin
-      // iodev starts at 0x20000000
-      if (addr[29]) gpio_data <= data_in;
-      else mem[addr[12:2]] <= addr[1]
+      mem[addr[12:2]] <= addr[1]
         ? (
           addr[0]
           ? {data_in[7:0], data[23:0]}
@@ -44,19 +41,69 @@ module ram (
     end
   end
 
-  assign gpio = gpio_data[7:0];
   assign data_out = out;
 endmodule
 
 module rom (
   input wire clk,
-  input wire [31:0] addr,
-  output wire [31:0] data
+  input wire [31:0] iaddr,
+  output wire [31:0] inst
 );
   reg [31:0] mem [`ROM_SIZE:0];
 
   integer i;
   initial $readmemh("firmware/hello.mem", mem);
 
-  assign data = mem[addr >> 2];
+  assign inst = mem[iaddr >> 2];
+endmodule
+
+module iodev (
+  input wire clk,
+  input wire en,
+  input wire [31:0] addr,
+  input wire [31:0] data_in,
+  output wire [`MAX_GPIO:0] gpio
+);
+  reg [31:0] gpio_data;
+
+  assign gpio = gpio_data[7:0];
+
+  always @(posedge clk)
+    if (en) gpio_data <= data_in;
+endmodule
+
+module memory (
+  input wire clk,
+  input wire [31:0] iaddr,
+  input wire [2:0] write_enable,
+  input wire [31:0] addr,
+  input wire [31:0] data_in,
+  output wire [`MAX_GPIO:0] gpio,
+  output wire [31:0] data_out,
+  output wire [31:0] inst
+);
+  rom rom (
+    .clk(clk),
+    .iaddr(iaddr),
+    .inst(inst)
+  );
+
+  ram ram (
+    .clk(clk),
+    // ram starts at 0x10000000
+    .en(addr[28]),
+    .write_enable(write_enable),
+    .addr(addr),
+    .data_in(data_in),
+    .data_out(data_out)
+  );
+
+  iodev iodev (
+    .clk(clk),
+    // iodev starts at 0x20000000
+    .en(addr[29]),
+    .addr(iaddr),
+    .data_in(data_in),
+    .gpio(gpio)
+  );
 endmodule
