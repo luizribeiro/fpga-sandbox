@@ -8,7 +8,7 @@ hello.s: hello.c
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
 		-march=rv32i -mabi=ilp32 \
-		-fno-common -fno-builtin-printf -S -Og \
+		-fno-common -fno-builtin-printf -S -O0 \
 		-o $(WORKDIR)/hello.s $(WORKDIR)/hello.c
 
 boot.o: boot.s

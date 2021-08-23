@@ -1,5 +1,5 @@
   .section .init, "ax"
   .global _start
 _start:
-  li sp, 1000
+  lw sp, __initial_stack_pointer
   jal zero, main
