@@ -63,16 +63,22 @@ endmodule
 module iodev (
   input wire clk,
   input wire en,
+  input wire [2:0] write_enable,
   input wire [31:0] addr,
   input wire [31:0] data_in,
+  output reg [31:0] data_out,
   output wire [`MAX_GPIO:0] gpio
 );
   reg [31:0] gpio_data;
 
   assign gpio = gpio_data[7:0];
 
-  always @(posedge clk)
-    if (en) gpio_data <= data_in;
+  always @(posedge clk) if (en) begin
+    data_out <= gpio_data;
+
+    // FIXME: for now only support writing by bytes
+    if (write_enable[2]) gpio_data <= data_in;
+  end
 endmodule
 
 module memory (
@@ -109,8 +115,10 @@ module memory (
     .clk(clk),
     // iodev starts at 0x20000000
     .en(addr[29]),
+    .write_enable(write_enable),
     .addr(iaddr),
     .data_in(data_in),
+    .data_out(data_out),
     .gpio(gpio)
   );
 endmodule
