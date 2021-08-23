@@ -22,7 +22,7 @@ module riscv (
 
   reg [`WORD:0] a, b, alu_ans, branch_addr, mem_in;
   reg [2:0] mem_write;
-  wire [`WORD:0] mem_out;
+  reg [`WORD:0] mem_out;
   memory memory (
     .clk(clk),
     .iaddr(pc),

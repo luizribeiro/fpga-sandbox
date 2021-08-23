@@ -7,16 +7,15 @@ module ram (
   input wire [2:0] write_enable,
   input wire [31:0] addr,
   input wire [31:0] data_in,
-  output wire [31:0] data_out
+  output reg [31:0] data_out
 );
   reg [31:0] mem [`RAM_SIZE:0];
-  reg [31:0] out;
   integer i;
 
   wire [31:0] data = mem[addr[12:2]];
 
   always @(posedge clk) if (en) begin
-    out <= addr[1]
+    data_out <= addr[1]
       ? (addr[0] ? (data >> 24) : (data >> 16))
       : (addr[0] ? (data >> 8) : data);
 
@@ -40,19 +39,23 @@ module ram (
         );
     end
   end
-
-  assign data_out = out;
 endmodule
 
 module rom (
   input wire clk,
+  input wire en,
   input wire [31:0] iaddr,
+  input wire [31:0] addr,
+  output reg [31:0] data_out,
   output wire [31:0] inst
 );
   reg [31:0] mem [`ROM_SIZE:0];
 
   integer i;
   initial $readmemh("firmware/hello.mem", mem);
+
+  always @(posedge clk)
+    if (en) data_out <= mem[addr[9:2]];
 
   assign inst = mem[iaddr >> 2];
 endmodule
@@ -79,11 +82,15 @@ module memory (
   input wire [31:0] addr,
   input wire [31:0] data_in,
   output wire [`MAX_GPIO:0] gpio,
-  output wire [31:0] data_out,
+  output reg [31:0] data_out,
   output wire [31:0] inst
 );
   rom rom (
     .clk(clk),
+    // rom starts at 0x00000000
+    .en(~(addr[31] | addr[30] | addr[29] | addr[28])),
+    .addr(addr),
+    .data_out(data_out),
     .iaddr(iaddr),
     .inst(inst)
   );
