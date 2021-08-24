@@ -30,7 +30,7 @@ SECTIONS
   }
 
   PROVIDE(__ram_begin = ORIGIN(ram));
-  PROVIDE(__initial_stack_pointer = ORIGIN(ram) + LENGTH(ram) - 1);
+  PROVIDE(__stack_top = ORIGIN(ram) + LENGTH(ram));
   PROVIDE(__ram_end = ORIGIN(ram) + LENGTH(ram));
   PROVIDE(__iodev_begin = ORIGIN(iodev));
   PROVIDE(__iodev_end = ORIGIN(iodev) + LENGTH(iodev));
