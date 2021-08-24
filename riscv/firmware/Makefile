@@ -38,7 +38,7 @@ hello.bin: hello.elf
 		$(WORKDIR)/hello.bin
 
 hello.mem: hello.bin
-	hexdump -e '1/4 "%08x\n"' hello.bin > hello.mem
+	hexdump -ve '1/4 "%08x\n"' hello.bin > hello.mem
 
 clean:
 	rm -f hello.s hello.o hello.elf hello.bin hello.mem
