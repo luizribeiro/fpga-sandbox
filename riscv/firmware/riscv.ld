@@ -16,10 +16,13 @@ SECTIONS
   /* .data is placed in rom and copied to ram on boot */
   .data :
   {
-    _sdata = .;
+    __ram_data_start = .;
     *(.data*);
-    _edata = .;
+    *(.sdata*);
+    . = ALIGN(4);
+    __ram_data_end = .;
   } > ram AT > rom
+  __rom_data_start = LOADADDR(.data);
 
   /DISCARD/ : {
     *(.comment)
