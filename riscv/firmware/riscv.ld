@@ -13,6 +13,12 @@ SECTIONS
     *(.text)
   } > rom
 
+  .bss (NOLOAD) :
+  {
+    *(.bss*)
+    . = ALIGN(4);
+  } > ram
+
   /* .data is placed in rom and copied to ram on boot */
   .data :
   {
