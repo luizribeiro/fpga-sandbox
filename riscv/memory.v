@@ -115,7 +115,7 @@ module memory (
     // iodev starts at 0x20000000
     .en(addr[29]),
     .write_enable(write_enable),
-    .addr(iaddr),
+    .addr(addr),
     .data_in(data_in),
     .data_out(data_out),
     .gpio(gpio)
