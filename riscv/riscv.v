@@ -176,21 +176,21 @@ module riscv (
 
     // write back
     if (stage[4]) begin
-      case (opcode)
-        `JAL, `JALR: if (rd != 5'b0) regs[rd] <= pc + 4;
-        `AUIPC, `LUI: if (rd != 5'b0) regs[rd] <= alu_ans;
-        `LOAD: begin
-          if (rd != 5'b0) begin
+      if (rd != 5'b0) begin
+        case (opcode)
+          `JAL, `JALR: regs[rd] <= pc + 4;
+          `AUIPC, `LUI: regs[rd] <= alu_ans;
+          `LOAD: begin
             case (funct3)
-            `LB: regs[rd] <= {{24{mem_out[7]}}, mem_out[7:0]};
-            `LW: regs[rd] <= mem_out;
-            `LBU: regs[rd] <= {24'b0, mem_out[7:0]};
-            `LHU: regs[rd] <= {16'b0, mem_out[15:0]};
+              `LB: regs[rd] <= {{24{mem_out[7]}}, mem_out[7:0]};
+              `LW: regs[rd] <= mem_out;
+              `LBU: regs[rd] <= {24'b0, mem_out[7:0]};
+              `LHU: regs[rd] <= {16'b0, mem_out[15:0]};
             endcase
           end
-        end
-        `OP_IMM, `OP: if(rd != 5'b0) regs[rd] <= alu_ans;
-      endcase
+          `OP_IMM, `OP: regs[rd] <= alu_ans;
+        endcase
+      end
 
       case (opcode)
         `JAL, `JALR: pc <= alu_ans;
