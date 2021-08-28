@@ -20,7 +20,7 @@ module riscv (
   reg [20:0] j_imm;
   reg [4:0] shamt;
 
-  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_in;
+  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_addr, mem_in;
   reg [2:0] mem_write;
   wire [`WORD:0] mem_out;
   memory memory (
@@ -28,7 +28,7 @@ module riscv (
     .iaddr(pc),
     .inst(inst),
     .write_enable(mem_write),
-    .addr(alu_ans),
+    .addr(mem_addr),
     .data_in(mem_in),
     .data_out(mem_out),
     .gpio(gpio)
@@ -160,8 +160,12 @@ module riscv (
     // memory access
     if (stage[3]) begin
       case (opcode)
-        `LOAD: mem_write <= 3'b0;
+        `LOAD: begin
+          mem_addr <= alu_ans;
+          mem_write <= 3'b0;
+        end
         `STORE: begin
+          mem_addr <= alu_ans;
           case (funct3)
             `SB: mem_write <= 3'b100;
             `SH: mem_write <= 3'b010;
