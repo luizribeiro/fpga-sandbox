@@ -144,14 +144,12 @@ module riscv (
         end
         `OP: begin
           case (funct3)
-            `ADD: alu_ans <= a + b;
-            // TODO: implement SUB
+            `ADDSUB: alu_ans <= i_imm[10] ? a - b : a + b;
             `SLL: alu_ans <= a << b;
             `SLT: alu_ans <= {31'b0, $signed(a) > $signed(b)};
             `SLTU: alu_ans <= {31'b0, a > b};
             `XOR: alu_ans <= a ^ b;
-            `SRL: alu_ans <= a >> b;
-            // TODO implement SRA
+            `SRX: alu_ans <= i_imm[10] ? a >>> b : a >> b;
             `OR: alu_ans <= a | b;
             `AND: alu_ans <= a & b;
           endcase

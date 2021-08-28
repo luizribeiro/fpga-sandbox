@@ -46,14 +46,12 @@
 
 // OP (funct3, funct7)
 `define OP       7'b0110011
-`define ADD      3'b000
-`define SUB      3'b000
+`define ADDSUB   3'b000
 `define SLL      3'b001
 `define SLT      3'b010
 `define SLTU     3'b011
 `define XOR      3'b100
-`define SRL      3'b101
-`define SRA      3'b101
+`define SRX      3'b101
 `define OR       3'b110
 `define AND      3'b111
 // 0000000 rs2 rs1 000 rd 0110011 ADD
