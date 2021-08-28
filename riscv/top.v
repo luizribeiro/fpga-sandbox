@@ -1,12 +1,12 @@
 module top (
-  output wire gpio_2,
-  output wire gpio_46,
-  output wire gpio_47,
-  output wire gpio_45,
-  output wire gpio_48,
-  output wire gpio_3,
-  output wire gpio_4,
-  output wire gpio_44
+  inout wire gpio_2,
+  inout wire gpio_46,
+  inout wire gpio_47,
+  inout wire gpio_45,
+  inout wire gpio_48,
+  inout wire gpio_3,
+  inout wire gpio_4,
+  inout wire gpio_44
 );
   wire clk;
   /* verilator lint_off PINMISSING */

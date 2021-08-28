@@ -4,7 +4,7 @@
 
 module riscv (
   input wire clk,
-  output wire [`MAX_GPIO:0] gpio
+  inout wire [`MAX_GPIO:0] gpio
 );
   reg [`WORD:0] regs [`LAST_REG:0];
 

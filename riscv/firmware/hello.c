@@ -1,13 +1,26 @@
 #include "riscv.h"
 
+#define INPUT 0
+#define OUTPUT 1
+
+void set_pin_direction(int pin, int direction) {
+  if (pin < 0 || pin >= 8)
+    return;
+
+  if (direction == INPUT)
+    GPIO_DIR &= ~(1 << pin);
+  else if (direction == OUTPUT)
+    GPIO_DIR |= (1 << pin);
+}
+
+int get_bit(int val, int pin) { return !!(val & (1 << pin)); }
+
 void main(void) {
-  for (;;) {
-    GPIO = 1;
-    for (int i = 0; i < 8; i++) {
-      GPIO = GPIO << 1;
+  set_pin_direction(7, OUTPUT);
+  set_pin_direction(1, INPUT);
+  set_pin_direction(0, OUTPUT);
+  for (;;)
+    for (int i = 0; i < 256; i++) {
+      GPIO = get_bit(i, 4) | (get_bit(GPIO, 1) << 7);
     }
-    __asm("nop");
-    __asm("nop");
-    GPIO = 0;
-  }
 }
