@@ -20,9 +20,8 @@ module riscv (
   reg [20:0] j_imm;
   reg [4:0] shamt;
 
-  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_addr, mem_in;
+  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_addr, mem_in, mem_out;
   reg [2:0] mem_write;
-  wire [`WORD:0] mem_out;
   memory memory (
     .clk(clk),
     .iaddr(pc),
