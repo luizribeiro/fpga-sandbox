@@ -95,7 +95,6 @@ module riscv (
         `STORE: begin
           a <= regs[rs1];
           b <= $signed({{20{s_imm[11]}}, s_imm});
-          mem_in <= regs[rs2];
         end
         `OP_IMM: begin
           case (funct3)
@@ -166,6 +165,7 @@ module riscv (
         end
         `STORE: begin
           mem_addr <= alu_ans;
+          mem_in <= regs[rs2];
           case (funct3)
             `SB: mem_write <= 3'b100;
             `SH: mem_write <= 3'b010;
