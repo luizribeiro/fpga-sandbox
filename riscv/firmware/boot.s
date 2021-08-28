@@ -1,8 +1,9 @@
-  .section .init, "ax"
-  .global _start
-_start:
+  .section .boot, "ax"
+  .global _boot
+_boot:
 /* device initialization */
   la sp, __stack_top
+  la gp, __global_pointer$
 
 /* copy .data section from ROM into RAM */
   la a0, __ram_data_start

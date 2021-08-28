@@ -9,7 +9,7 @@ SECTIONS
 {
   .text :
   {
-    *(.init)
+    *(.boot)
     *(.text)
   } > rom
 
@@ -22,13 +22,17 @@ SECTIONS
   /* .data is placed in rom and copied to ram on boot */
   .data :
   {
+    __global_pointer$ = . + 0x800;
     __ram_data_start = .;
     *(.data*);
     *(.sdata*);
     . = ALIGN(4);
     __ram_data_end = .;
   } > ram AT > rom
+  _edata = .; PROVIDE (edata = .);
   __rom_data_start = LOADADDR(.data);
+
+  _end = .;
 
   /DISCARD/ : {
     *(.comment)
