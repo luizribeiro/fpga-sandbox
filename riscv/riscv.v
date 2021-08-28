@@ -173,7 +173,7 @@ module riscv (
           endcase
         end
       endcase
-    end
+    end else mem_write <= 3'b0;
 
     // write back
     if (stage[4]) begin
@@ -198,8 +198,6 @@ module riscv (
         `BRANCH: pc <= alu_ans[0] ? branch_addr : pc + 4;
         default: pc <= pc + 4;
       endcase
-
-      mem_write <= 3'b0;
     end
   end
 endmodule
