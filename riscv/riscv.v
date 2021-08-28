@@ -8,7 +8,7 @@ module riscv (
 );
   reg [`WORD:0] regs [`LAST_REG:0];
 
-  reg [`WORD:0] pc;
+  reg [`WORD:0] pc, next_pc;
   wire [`WORD:0] inst;
   reg [6:0] opcode;
   reg [4:0] rd, rs1, rs2;
@@ -20,8 +20,11 @@ module riscv (
   reg [20:0] j_imm;
   reg [4:0] shamt;
 
-  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_addr, mem_in, mem_out;
+  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_addr, mem_in;
+  reg [3:0] alu_op;
+  reg should_branch;
   reg [2:0] mem_write;
+  wire [`WORD:0] mem_out;
   memory memory (
     .clk(clk),
     .iaddr(pc),
@@ -48,6 +51,7 @@ module riscv (
 
     // instruction fetch
     if (stage[0]) begin
+      next_pc <= pc + 4;
       opcode <= inst[6:0];
       rd <= inst[11:7];
       rs1 <= inst[19:15];
@@ -69,31 +73,45 @@ module riscv (
         `LUI: begin
           a <= {u_imm, 12'b0};
           b <= 'b0;
+          alu_op <= `ALU_ADD;
         end
         `AUIPC: begin
           a <= pc;
           b <= {u_imm, 12'b0};
+          alu_op <= `ALU_ADD;
         end
         `JAL: begin
           a <= pc;
           b <= {{11{j_imm[20]}}, j_imm};
+          alu_op <= `ALU_ADD;
         end
         `JALR: begin
           a <= regs[rs1];
           b <= {{20{i_imm[11]}}, i_imm};
+          alu_op <= `ALU_ADD;
         end
         `BRANCH: begin
           a <= regs[rs1];
           b <= regs[rs2];
           branch_addr <= pc + $signed({{19{b_imm[12]}}, b_imm});
+          case (funct3)
+            `BEQ: alu_op <= `ALU_BEQ;
+            `BNE: alu_op <= `ALU_BNEQ;
+            `BLT: alu_op <= `ALU_BLTS;
+            `BGE: alu_op <= `ALU_BGES;
+            `BLTU: alu_op <= `ALU_BLTU;
+            `BGEU: alu_op <= `ALU_BGEU;
+          endcase
         end
         `LOAD: begin
           a <= regs[rs1];
           b <= {{20{i_imm[11]}}, i_imm};
+          alu_op <= `ALU_ADD;
         end
         `STORE: begin
           a <= regs[rs1];
           b <= {{20{s_imm[11]}}, s_imm};
+          alu_op <= `ALU_ADD;
         end
         `OP_IMM: begin
           case (funct3)
@@ -106,52 +124,53 @@ module riscv (
               b <= {27'b0, shamt[4:0]};
             end
           endcase
+          case (funct3)
+            `ADDI: alu_op <= `ALU_ADD;
+            `SLTI: alu_op <= `ALU_SLTS;
+            `SLTIU: alu_op <= `ALU_SLTU;
+            `XORI: alu_op <= `ALU_XOR;
+            `ORI: alu_op <= `ALU_OR;
+            `ANDI: alu_op <= `ALU_AND;
+            `SLLI: alu_op <= `ALU_SLL;
+            `SRXI: alu_op <= i_imm[10] ? `ALU_SRA : `ALU_SRL;
+          endcase
         end
         `OP: begin
           a <= regs[rs1];
           b <= regs[rs2];
+          case (funct3)
+            `ADDSUB: alu_op <= i_imm[10] ? `ALU_SUB : `ALU_ADD;
+            `SLL: alu_op <= `ALU_SLL;
+            `SLT: alu_op <= `ALU_SLTS;
+            `SLTU: alu_op <= `ALU_SLTU;
+            `XOR: alu_op <= `ALU_XOR;
+            `SRX: alu_op <= i_imm[10] ? `ALU_SRA : `ALU_SRL;
+            `OR: alu_op <= `ALU_OR;
+            `AND: alu_op <= `ALU_AND;
+          endcase
         end
       endcase
     end
 
     // execute
     if (stage[2]) begin
-      case (opcode)
-        `LUI, `AUIPC, `JAL, `JALR, `LOAD, `STORE: alu_ans <= a + b;
-        `BRANCH: begin
-          case (funct3)
-            `BEQ: alu_ans <= {31'b0, a == b};
-            `BNE: alu_ans <= {31'b0, a != b};
-            `BLT: alu_ans <= {31'b0, $signed(a) < $signed(b)};
-            `BGE: alu_ans <= {31'b0, $signed(a) >= $signed(b)};
-            `BLTU: alu_ans <= {31'b0, a < b};
-            `BGEU: alu_ans <= {31'b0, a >= b};
-          endcase
-        end
-        `OP_IMM: begin
-          case (funct3)
-            `ADDI: alu_ans <= a + b;
-            `SLTI: alu_ans <= {31'b0, $signed(a) > $signed(b)};
-            `SLTIU: alu_ans <= {31'b0, a > b};
-            `XORI: alu_ans <= a ^ b;
-            `ORI: alu_ans <= a | b;
-            `ANDI: alu_ans <= a & b;
-            `SLLI: alu_ans <= a << b;
-            `SRXI: alu_ans <= i_imm[10] ? a >>> b : a >> b;
-          endcase
-        end
-        `OP: begin
-          case (funct3)
-            `ADDSUB: alu_ans <= i_imm[10] ? a - b : a + b;
-            `SLL: alu_ans <= a << b;
-            `SLT: alu_ans <= {31'b0, $signed(a) > $signed(b)};
-            `SLTU: alu_ans <= {31'b0, a > b};
-            `XOR: alu_ans <= a ^ b;
-            `SRX: alu_ans <= i_imm[10] ? a >>> b : a >> b;
-            `OR: alu_ans <= a | b;
-            `AND: alu_ans <= a & b;
-          endcase
-        end
+      case (alu_op)
+        `ALU_ADD: alu_ans <= a + b;
+        `ALU_SUB: alu_ans <= a - b;
+        `ALU_XOR: alu_ans <= a ^ b;
+        `ALU_OR: alu_ans <= a | b;
+        `ALU_AND: alu_ans <= a & b;
+        `ALU_SLL: alu_ans <= a << b;
+        `ALU_SLTS: alu_ans <= {31'b0, $signed(a) > $signed(b)};
+        `ALU_SLTU: alu_ans <= {31'b0, a > b};
+        `ALU_SRL: alu_ans <= a >> b;
+        `ALU_SRA: alu_ans <= a >>> b;
+        `ALU_BEQ: should_branch <= a == b;
+        `ALU_BNEQ: should_branch <= a != b;
+        `ALU_BLTS: should_branch <= $signed(a) < $signed(b);
+        `ALU_BLTU: should_branch <= a < b;
+        `ALU_BGES: should_branch <= $signed(a) >= $signed(b);
+        `ALU_BGEU: should_branch <= a >= b;
       endcase
     end
 
@@ -169,7 +188,6 @@ module riscv (
             `SB: mem_write <= 3'b100;
             `SH: mem_write <= 3'b010;
             `SW: mem_write <= 3'b001;
-            default: mem_write <= 3'b0;
           endcase
         end
       endcase
@@ -179,7 +197,7 @@ module riscv (
     if (stage[4]) begin
       if (rd != 5'b0) begin
         case (opcode)
-          `JAL, `JALR: regs[rd] <= pc + 4;
+          `JAL, `JALR: regs[rd] <= next_pc;
           `AUIPC, `LUI: regs[rd] <= alu_ans;
           `LOAD: begin
             case (funct3)
@@ -195,8 +213,8 @@ module riscv (
 
       case (opcode)
         `JAL, `JALR: pc <= alu_ans;
-        `BRANCH: pc <= alu_ans[0] ? branch_addr : pc + 4;
-        default: pc <= pc + 4;
+        `BRANCH: pc <= should_branch ? branch_addr : next_pc;
+        default: pc <= next_pc;
       endcase
     end
   end
