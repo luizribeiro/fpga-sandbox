@@ -76,11 +76,11 @@ module riscv (
         end
         `JAL: begin
           a <= pc;
-          b <= $signed({{11{j_imm[20]}}, j_imm});
+          b <= {{11{j_imm[20]}}, j_imm};
         end
         `JALR: begin
           a <= regs[rs1];
-          b <= $signed({{20{i_imm[11]}}, i_imm});
+          b <= {{20{i_imm[11]}}, i_imm};
         end
         `BRANCH: begin
           a <= regs[rs1];
@@ -89,11 +89,11 @@ module riscv (
         end
         `LOAD: begin
           a <= regs[rs1];
-          b <= $signed({{20{i_imm[11]}}, i_imm});
+          b <= {{20{i_imm[11]}}, i_imm};
         end
         `STORE: begin
           a <= regs[rs1];
-          b <= $signed({{20{s_imm[11]}}, s_imm});
+          b <= {{20{s_imm[11]}}, s_imm};
         end
         `OP_IMM: begin
           case (funct3)
