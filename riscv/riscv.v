@@ -4,7 +4,8 @@
 
 module riscv (
   input wire clk,
-  inout wire [`MAX_GPIO:0] gpio
+  inout wire [`MAX_GPIO:0] gpio,
+  output wire uart_txd
 );
   reg [`WORD:0] regs [`LAST_REG:0];
 
@@ -34,7 +35,8 @@ module riscv (
     .addr(mem_addr),
     .data_in(mem_in),
     .data_out(mem_out),
-    .gpio(gpio)
+    .gpio(gpio),
+    .uart_txd(uart_txd)
   );
 
   reg [4:0] stage;

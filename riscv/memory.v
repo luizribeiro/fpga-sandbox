@@ -67,7 +67,8 @@ module iodev (
   input wire [31:0] addr,
   input wire [31:0] data_in,
   output wire [31:0] data_out,
-  inout wire [`MAX_GPIO:0] gpio_port
+  inout wire [`MAX_GPIO:0] gpio_port,
+  output wire uart_txd
 );
   reg [`MAX_GPIO:0] r_gpio;
   reg [`MAX_GPIO:0] gpio_dir = {(`MAX_GPIO+1){1'b1}};
@@ -86,12 +87,58 @@ module iodev (
 
       always @(posedge clk) if (en) begin
         if (write_enable[2]) begin
-          if (addr[0]) gpio_dir[i] <= data_in[i];
-          else if (gpio_dir[i]) r_gpio[i] <= data_in[i];
+          if (addr[3:0] == 4'h1) gpio_dir[i] <= data_in[i];
+          else if (addr[3:0] == 4'h0 && gpio_dir[i]) r_gpio[i] <= data_in[i];
         end else r_gpio[i] <= gpio_dir[i] ? r_gpio[i] : gpio_port[i];
       end
     end
   endgenerate
+
+  // uart
+  reg [29:0] uart_cnt = 30'b0;
+  always @(posedge clk) uart_cnt = uart_cnt + 53687;
+  wire uart_clk = uart_cnt[27];
+  reg signed [3:0] bits_left;
+  reg tx_active, tx_was_active;
+  reg [9:0] tx_data;
+  reg tx_line = 1'b1;
+  assign uart_txd = tx_line;
+
+  initial begin
+    bits_left = 4'hf;
+    tx_data = {1'b0, 8'b0, 1'b1};
+    tx_active = 1'b0;
+    tx_was_active = 1'b0;
+  end
+
+  generate
+    genvar j;
+    for (j = 0; j < 8; j = j + 1)
+      always @(posedge clk)
+        if (en && write_enable[2] && addr[3:0] == 4'h2)
+          tx_data[j + 1] <= data_in[7 - j];
+  endgenerate
+
+  always @(posedge clk) begin
+    if (en && write_enable[2] && addr[3:0] == 4'h2)
+      tx_active <= 1'b1;
+    if (tx_active && tx_was_active && bits_left == 4'hf)
+      tx_active <= 1'b0;
+  end
+
+  always @(posedge uart_clk) begin
+    tx_was_active <= tx_active;
+    if (tx_active) begin
+      if (tx_was_active != tx_active) begin
+        // we just activated, send start bit
+        bits_left <= 4'd8;
+        tx_line <= 1'b0;
+      end else begin
+        bits_left <= bits_left - 4'b1;
+        tx_line <= bits_left >= 4'd0 ? tx_data[bits_left] : 1'b1;
+      end
+    end
+  end
 endmodule
 
 module memory (
@@ -101,6 +148,7 @@ module memory (
   input wire [31:0] addr,
   input wire [31:0] data_in,
   inout wire [`MAX_GPIO:0] gpio,
+  output wire uart_txd,
   output wire [31:0] data_out,
   output wire [31:0] inst
 );
@@ -132,6 +180,7 @@ module memory (
     .addr(addr),
     .data_in(data_in),
     .data_out(data_out),
-    .gpio_port(gpio)
+    .gpio_port(gpio),
+    .uart_txd(uart_txd)
   );
 endmodule

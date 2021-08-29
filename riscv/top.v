@@ -6,7 +6,8 @@ module top (
   inout wire gpio_48,
   inout wire gpio_3,
   inout wire gpio_4,
-  inout wire gpio_44
+  inout wire gpio_44,
+  output wire serial_txd
 );
   wire clk;
   /* verilator lint_off PINMISSING */
@@ -23,6 +24,7 @@ module top (
       gpio_3,
       gpio_4,
       gpio_44
-    })
+    }),
+    .uart_txd(serial_txd)
   );
 endmodule

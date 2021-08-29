@@ -4,5 +4,7 @@
 extern unsigned char __iodev_begin;
 #define GPIO (*(unsigned char *)&__iodev_begin)
 #define GPIO_DIR (*((unsigned char *)&__iodev_begin + 0x1))
+#define UART_TX (*((unsigned char *)&__iodev_begin + 0x2))
+#define UART_STATUS (*((unsigned char *)&__iodev_begin + 0x3))
 
 #endif

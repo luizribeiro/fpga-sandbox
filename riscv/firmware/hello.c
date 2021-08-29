@@ -14,7 +14,14 @@ void set_pin_direction(int pin, int direction) {
 }
 
 void main(void) {
-  for (;;)
-    for (int i = 0; i < 256; i++)
-      GPIO = i;
+  char str[] = "Hello, world!\r\n";
+  for (;;) {
+    for (char *p = str; *p; p++) {
+      UART_TX = *p;
+      for (int i = 0; i < 3000; i++)
+        ;
+    }
+    for (int i = 0; i < 650000; i++)
+      ;
+  }
 }
