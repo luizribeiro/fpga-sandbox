@@ -67,28 +67,28 @@ module iodev (
   input wire [31:0] addr,
   input wire [31:0] data_in,
   output wire [31:0] data_out,
-  inout wire [`MAX_GPIO:0] gpio
+  inout wire [`MAX_GPIO:0] gpio_port
 );
-  reg [`MAX_GPIO:0] gpio_data;
+  reg [`MAX_GPIO:0] r_gpio;
   reg [`MAX_GPIO:0] gpio_dir = {(`MAX_GPIO+1){1'b1}};
 
   assign data_out = en ? (
     addr[0]
     ? {{(32-`MAX_GPIO-1){1'b0}}, gpio_dir}
-    : {{(32-`MAX_GPIO-1){1'b0}}, gpio_data}
+    : {{(32-`MAX_GPIO-1){1'b0}}, r_gpio}
   ) : 'hzz;
 
   generate
     genvar i;
 
     for (i = 0; i <= `MAX_GPIO; i = i+1) begin
-      assign gpio[i] = gpio_dir[i] ? gpio_data[i] : 1'bz;
+      assign gpio_port[i] = gpio_dir[i] ? r_gpio[i] : 1'bz;
 
       always @(posedge clk) if (en) begin
         if (write_enable[2]) begin
           if (addr[0]) gpio_dir[i] <= data_in[i];
-          else if (gpio_dir[i]) gpio_data[i] <= data_in[i];
-        end else gpio_data[i] <= gpio_dir[i] ? gpio_data[i] : gpio[i];
+          else if (gpio_dir[i]) r_gpio[i] <= data_in[i];
+        end else r_gpio[i] <= gpio_dir[i] ? r_gpio[i] : gpio_port[i];
       end
     end
   endgenerate
@@ -132,6 +132,6 @@ module memory (
     .addr(addr),
     .data_in(data_in),
     .data_out(data_out),
-    .gpio(gpio)
+    .gpio_port(gpio)
   );
 endmodule
