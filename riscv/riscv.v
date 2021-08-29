@@ -20,8 +20,9 @@ module riscv (
   reg [20:0] j_imm;
   reg [4:0] shamt;
 
-  reg [`WORD:0] a, b, alu_ans, branch_addr, mem_addr, mem_in;
+  reg [`WORD:0] a, b, alu_ans, balu_a, balu_b, mem_addr, mem_in;
   reg [3:0] alu_op;
+  reg [2:0] balu_op;
   reg should_branch;
   reg [2:0] mem_write;
   wire [`WORD:0] mem_out;
@@ -91,16 +92,18 @@ module riscv (
           alu_op <= `ALU_ADD;
         end
         `BRANCH: begin
-          a <= regs[rs1];
-          b <= regs[rs2];
-          branch_addr <= pc + $signed({{19{b_imm[12]}}, b_imm});
+          a <= pc;
+          b <= {{19{b_imm[12]}}, b_imm};
+          alu_op <= `ALU_ADD;
+          balu_a <= regs[rs1];
+          balu_b <= regs[rs2];
           case (funct3)
-            `BEQ: alu_op <= `ALU_BEQ;
-            `BNE: alu_op <= `ALU_BNEQ;
-            `BLT: alu_op <= `ALU_BLTS;
-            `BGE: alu_op <= `ALU_BGES;
-            `BLTU: alu_op <= `ALU_BLTU;
-            `BGEU: alu_op <= `ALU_BGEU;
+            `BEQ: balu_op <= `BALU_EQ;
+            `BNE: balu_op <= `BALU_NEQ;
+            `BLT: balu_op <= `BALU_LTS;
+            `BGE: balu_op <= `BALU_GES;
+            `BLTU: balu_op <= `BALU_LTU;
+            `BGEU: balu_op <= `BALU_GEU;
           endcase
         end
         `LOAD: begin
@@ -165,12 +168,14 @@ module riscv (
         `ALU_SLTU: alu_ans <= {31'b0, a > b};
         `ALU_SRL: alu_ans <= a >> b;
         `ALU_SRA: alu_ans <= a >>> b;
-        `ALU_BEQ: should_branch <= a == b;
-        `ALU_BNEQ: should_branch <= a != b;
-        `ALU_BLTS: should_branch <= $signed(a) < $signed(b);
-        `ALU_BLTU: should_branch <= a < b;
-        `ALU_BGES: should_branch <= $signed(a) >= $signed(b);
-        `ALU_BGEU: should_branch <= a >= b;
+      endcase
+      case (balu_op)
+        `BALU_EQ: should_branch <= balu_a == balu_b;
+        `BALU_NEQ: should_branch <= balu_a != balu_b;
+        `BALU_LTS: should_branch <= $signed(balu_a) < $signed(balu_b);
+        `BALU_LTU: should_branch <= balu_a < balu_b;
+        `BALU_GES: should_branch <= $signed(balu_a) >= $signed(balu_b);
+        `BALU_GEU: should_branch <= balu_a >= balu_b;
       endcase
     end
 
@@ -213,7 +218,7 @@ module riscv (
 
       case (opcode)
         `JAL, `JALR: pc <= alu_ans;
-        `BRANCH: pc <= should_branch ? branch_addr : next_pc;
+        `BRANCH: pc <= should_branch ? alu_ans : next_pc;
         default: pc <= next_pc;
       endcase
     end

@@ -70,7 +70,7 @@ module iodev (
   inout wire [`MAX_GPIO:0] gpio
 );
   reg [`MAX_GPIO:0] gpio_data;
-  reg [`MAX_GPIO:0] gpio_dir = {(`MAX_GPIO+1){1'b0}};
+  reg [`MAX_GPIO:0] gpio_dir = {(`MAX_GPIO+1){1'b1}};
 
   assign data_out = en ? (
     addr[0]

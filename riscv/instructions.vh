@@ -85,11 +85,12 @@
 `define ALU_SLTU 4'b0111
 `define ALU_SRL 4'b1000
 `define ALU_SRA 4'b1001
-`define ALU_BEQ 4'b1010
-`define ALU_BNEQ 4'b1011
-`define ALU_BLTS 4'b1100
-`define ALU_BLTU 4'b1101
-`define ALU_BGES 4'b1110
-`define ALU_BGEU 4'b1111
+
+`define BALU_EQ   3'b000
+`define BALU_NEQ  3'b001
+`define BALU_LTS  3'b010
+`define BALU_LTU  3'b011
+`define BALU_GES  3'b100
+`define BALU_GEU  3'b101
 
 `endif
