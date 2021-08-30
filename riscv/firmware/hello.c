@@ -3,11 +3,7 @@
 void main(void) {
   char str[] = "Hello, world!\r\n";
   for (;;) {
-    for (char *p = str; *p; p++) {
-      UART_TX = *p;
-      while (is_uart_busy())
-        ;
-    }
+    uart_puts(str);
     for (int i = 0; i < 650000; i++)
       ;
   }
