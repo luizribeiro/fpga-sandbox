@@ -73,10 +73,24 @@ module iodev (
   reg [`MAX_GPIO:0] r_gpio;
   reg [`MAX_GPIO:0] gpio_dir = {(`MAX_GPIO+1){1'b1}};
 
+  `define IDLE 3'd0
+  `define START_BIT 3'd1
+  `define DATA_BIT 3'd2
+  `define STOP_BIT 3'd3
+  `define DONE 3'd4
+
   assign data_out = en ? (
-    addr[0]
+    addr[3:0] == 4'h1
     ? {{(32-`MAX_GPIO-1){1'b0}}, gpio_dir}
-    : {{(32-`MAX_GPIO-1){1'b0}}, r_gpio}
+    : (
+      addr[3:0] == 4'h0
+      ? {{(32-`MAX_GPIO-1){1'b0}}, r_gpio}
+      : (
+        addr[3:0] == 4'h3
+        ? {31'b0, (tx_state != `IDLE | tx_busy)}
+        : 'hzz
+      )
+    )
   ) : 'hzz;
 
   generate
@@ -98,17 +112,17 @@ module iodev (
   reg [29:0] uart_cnt = 30'b0;
   always @(posedge clk) uart_cnt = uart_cnt + 53687;
   wire uart_clk = uart_cnt[27];
-  reg signed [3:0] bits_left;
-  reg tx_active, tx_was_active;
-  reg [9:0] tx_data;
+  reg signed [2:0] bits_left;
+  reg tx_busy;
+  reg [2:0] tx_state;
+  reg [7:0] tx_data;
   reg tx_line = 1'b1;
   assign uart_txd = tx_line;
 
   initial begin
-    bits_left = 4'hf;
-    tx_data = {1'b0, 8'b0, 1'b1};
-    tx_active = 1'b0;
-    tx_was_active = 1'b0;
+    tx_data = 8'b0;
+    tx_busy = 1'b0;
+    tx_state = `IDLE;
   end
 
   generate
@@ -116,28 +130,39 @@ module iodev (
     for (j = 0; j < 8; j = j + 1)
       always @(posedge clk)
         if (en && write_enable[2] && addr[3:0] == 4'h2)
-          tx_data[j + 1] <= data_in[7 - j];
+          tx_data[j] <= data_in[7 - j];
   endgenerate
 
   always @(posedge clk) begin
     if (en && write_enable[2] && addr[3:0] == 4'h2)
-      tx_active <= 1'b1;
-    if (tx_active && tx_was_active && bits_left == 4'hf)
-      tx_active <= 1'b0;
+      tx_busy <= 1'b1;
+    if (tx_state == `DONE)
+      tx_busy <= 1'b0;
   end
 
   always @(posedge uart_clk) begin
-    tx_was_active <= tx_active;
-    if (tx_active) begin
-      if (tx_was_active != tx_active) begin
-        // we just activated, send start bit
-        bits_left <= 4'd8;
-        tx_line <= 1'b0;
-      end else begin
-        bits_left <= bits_left - 4'b1;
-        tx_line <= bits_left >= 4'd0 ? tx_data[bits_left] : 1'b1;
+    if (~tx_busy) tx_state <= `IDLE;
+    case (tx_state)
+      `IDLE: begin
+        tx_line <= 1'b1;
+        tx_state <= tx_busy ? `START_BIT : `IDLE;
       end
-    end
+      `START_BIT: begin
+        tx_line <= 1'b0;
+        tx_state <= `DATA_BIT;
+        bits_left <= 3'd7;
+      end
+      `DATA_BIT: begin
+        tx_line <= tx_data[bits_left];
+        tx_state <= bits_left == 3'b0 ? `STOP_BIT : `DATA_BIT;
+        bits_left <= bits_left - 3'b1;
+      end
+      `STOP_BIT: begin
+        tx_line <= 1'b1;
+        tx_state <= `DONE;
+      end
+      default: tx_line <= 1'b1;
+    endcase
   end
 endmodule
 
