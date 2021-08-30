@@ -1,35 +1,34 @@
 WORKDIR="/work"
 
 .PHONY: all clean dump docker-image
+.SECONDARY:
 
 all: hello.elf hello.mem
 
-hello.s: hello.c
+%.s: %.c riscv.h
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
 		-march=rv32i -mabi=ilp32 \
 		-fno-common -fno-builtin-printf -S -Og \
-		-o $(WORKDIR)/hello.s $(WORKDIR)/hello.c
+		-o $(WORKDIR)/$@ -c $(WORKDIR)/$<
 
-boot.o: boot.s
+%.o: %.c
+%.o: %.s
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
 		-march=rv32i -mabi=ilp32 \
-		-c $(WORKDIR)/boot.s
+		-o $(WORKDIR)/$@ -c $(WORKDIR)/$<
 
-hello.o: hello.s
-	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
-		riscv32-unknown-elf-gcc \
-		-march=rv32i -mabi=ilp32 \
-		-c $(WORKDIR)/hello.s
-
-hello.elf: hello.o boot.o riscv.ld
+hello.elf: hello.o riscv.o boot.o riscv.ld
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
 		riscv32-unknown-elf-gcc \
 		-march=rv32i -mabi=ilp32 \
 		-static -T riscv.ld \
 		-nostdlib \
-		-o $(WORKDIR)/hello.elf $(WORKDIR)/hello.o $(WORKDIR)/boot.o
+		-o $(WORKDIR)/$@ \
+		$(WORKDIR)/hello.o \
+		$(WORKDIR)/riscv.o \
+		$(WORKDIR)/boot.O
 
 hello.bin: hello.elf
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \
@@ -41,7 +40,7 @@ hello.mem: hello.bin
 	hexdump -ve '1/4 "%08x\n"' hello.bin > hello.mem
 
 clean:
-	rm -f hello.s hello.o hello.elf hello.bin hello.mem
+	rm -f hello.s riscv.s *.o *.elf *.bin *.mem
 
 dump: hello.elf
 	docker run -v `pwd`:$(WORKDIR) riscv-gnu-toolchain \

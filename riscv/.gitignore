@@ -3,4 +3,6 @@ firmware/*.bin
 firmware/*.elf
 firmware/*.mem
 firmware/*.o
-firmware/hello.s
+firmware/*.O
+firmware/*.s
+!firmware/boot.s

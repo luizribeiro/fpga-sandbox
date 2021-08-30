@@ -7,4 +7,10 @@ extern unsigned char __iodev_begin;
 #define UART_TX (*((unsigned char *)&__iodev_begin + 0x2))
 #define UART_STATUS (*((unsigned char *)&__iodev_begin + 0x3))
 
+#define INPUT 0
+#define OUTPUT 1
+
+void set_pin_direction(int pin, int direction);
+int is_uart_busy();
+
 #endif
