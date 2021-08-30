@@ -4,3 +4,4 @@ hardware.*
 *.out
 *.vcd
 .DS_Store
+.ccls-cache/
