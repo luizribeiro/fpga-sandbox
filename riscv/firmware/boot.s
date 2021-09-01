@@ -2,8 +2,11 @@
   .global _boot
 _boot:
 /* device initialization */
-  la sp, __stack_top
+.option push
+.option norelax
   la gp, __global_pointer$
+.option pop
+  la sp, __stack_top
 
 /* copy .data section from ROM into RAM */
   la a0, __ram_data_start
