@@ -13,7 +13,7 @@ _boot:
   la a1, __ram_data_end
   la a2, __rom_data_start
 _copy_data:
-  ble a1, a0, _call_main
+  bleu a1, a0, _call_main
   lw a3, 0(a2)
   sw a3, 0(a0)
   addi a0, a0, 4
