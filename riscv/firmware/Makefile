@@ -39,7 +39,7 @@ clean:
 	rm -f $(ASM_OUTPUTS) $(OBJECTS) boot.o hello.elf hello.bin hello.mem
 
 dump: hello.elf
-	$(DOCKER_RUN) riscv32-unknown-elf-objdump -sdl hello.elf
+	$(DOCKER_RUN) riscv32-unknown-elf-objdump -sdl hello.elf | less
 
 docker-image:
 	docker build -t $(DOCKER_CONTAINER) .
