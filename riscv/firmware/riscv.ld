@@ -25,6 +25,7 @@ SECTIONS
     __global_pointer$ = . + 0x800;
     __ram_data_start = .;
     *(.data*);
+    *(.rodata*);
     *(.sdata*);
     . = ALIGN(4);
     __ram_data_end = .;
