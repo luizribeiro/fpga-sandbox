@@ -13,11 +13,16 @@ module iodev (
   reg [`MAX_GPIO:0] r_gpio;
   reg [`MAX_GPIO:0] gpio_dir = {(`MAX_GPIO+1){1'b1}};
 
-  `define IDLE 3'd0
-  `define START_BIT 3'd1
-  `define DATA_BIT 3'd2
-  `define STOP_BIT 3'd3
-  `define DONE 3'd4
+  wire uart_tx_busy;
+  uart uart (
+    .clk(clk),
+    .en(en),
+    .write_enable(write_enable),
+    .addr(addr),
+    .data_in(data_in),
+    .uart_txd(uart_txd),
+    .uart_tx_busy(uart_tx_busy)
+  );
 
   assign data_out = en ? (
     addr[3:0] == 4'h1
@@ -27,7 +32,7 @@ module iodev (
       ? {{(32-`MAX_GPIO-1){1'b0}}, r_gpio}
       : (
         addr[3:0] == 4'h3
-        ? {31'b0, (tx_state != `IDLE | tx_busy)}
+        ? {31'b0, uart_tx_busy}
         : 'hzz
       )
     )
@@ -47,8 +52,23 @@ module iodev (
       end
     end
   endgenerate
+endmodule
 
-  // uart
+`define IDLE 3'd0
+`define START_BIT 3'd1
+`define DATA_BIT 3'd2
+`define STOP_BIT 3'd3
+`define DONE 3'd4
+
+module uart (
+  input wire clk,
+  input wire en,
+  input wire [2:0] write_enable,
+  input wire [23:0] addr,
+  input wire [31:0] data_in,
+  output wire uart_txd,
+  output wire uart_tx_busy
+);
   reg [29:0] uart_cnt = 30'b0;
   always @(posedge clk) uart_cnt = uart_cnt + 53687;
   wire uart_clk = uart_cnt[27];
@@ -58,6 +78,7 @@ module iodev (
   reg [7:0] tx_data;
   reg tx_line = 1'b1;
   assign uart_txd = tx_line;
+  assign uart_tx_busy = tx_state != `IDLE | tx_busy;
 
   initial begin
     tx_data = 8'b0;
