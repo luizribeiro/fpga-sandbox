@@ -71,30 +71,30 @@ module memory (
   output wire [31:0] data_out,
   output wire [31:0] inst
 );
+  wire en_rom;
   rom rom (
     .clk(clk),
-    // rom starts at 0x00000000
-    .en(~(addr[31] | addr[30] | addr[29] | addr[28])),
+    .en(en_rom),
     .addr(addr[23:0]),
     .data_out(data_out),
     .iaddr(iaddr),
     .inst(inst)
   );
 
+  wire en_ram;
   ram ram (
     .clk(clk),
-    // ram starts at 0x10000000
-    .en(addr[28]),
+    .en(en_ram),
     .write_enable(write_enable),
     .addr(addr[23:0]),
     .data_in(data_in),
     .data_out(data_out)
   );
 
+  wire en_iodev;
   iodev iodev (
     .clk(clk),
-    // iodev starts at 0x20000000
-    .en(addr[29]),
+    .en(en_iodev),
     .write_enable(write_enable),
     .addr(addr[23:0]),
     .data_in(data_in),
@@ -102,4 +102,14 @@ module memory (
     .gpio_port(gpio),
     .uart_txd(uart_txd)
   );
+
+  assign {en_rom, en_ram, en_iodev} = f_en(addr[31:28]);
+  function [2:0] f_en(input [3:0] addr);
+    casez (addr)
+      4'b0000: f_en = 3'b100;
+      4'b0001: f_en = 3'b010;
+      4'b001?: f_en = 3'b001;
+      default: f_en = 3'b000;
+    endcase
+  endfunction
 endmodule
