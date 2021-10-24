@@ -9,9 +9,14 @@ module top (
   inout wire gpio_44,
   output wire serial_txd
 );
-  wire clk;
+  wire clkhf, clk, _lock;
   /* verilator lint_off PINMISSING */
-  SB_HFOSC u_SB_HFOSC (.CLKHFPU(1'b1), .CLKHFEN(1'b1), .CLKHF(clk));
+  SB_HFOSC u_SB_HFOSC (.CLKHFPU(1'b1), .CLKHFEN(1'b1), .CLKHF(clkhf));
+  pll pll(
+    .clock_in(clkhf),
+    .clock_out(clk),
+    .locked(_lock)
+  );
 
   riscv p (
     .clk(clk),

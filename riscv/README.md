@@ -25,3 +25,11 @@ apio build && apio upload
 ```
 rm hardware.* ; (cd firmware && make) ; apio build && apio upload
 ```
+
+## Changing clock
+
+```
+icepll -i 48 -o 58 -m -f pll.v
+```
+
+For 58MHz, use 11600 baud (9600 * 58 / 48)
