@@ -60,7 +60,7 @@ module rom (
   assign inst = mem[iaddr >> 2];
 endmodule
 
-module memory (
+module memory_controller (
   input wire clk,
   input wire [31:0] iaddr,
   input wire [2:0] write_enable,

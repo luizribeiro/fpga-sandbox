@@ -27,14 +27,17 @@ module riscv (
   reg should_branch;
   reg [2:0] mem_write;
   wire [`WORD:0] mem_out;
-  memory memory (
+  memory_controller imc (
+    // bus
     .clk(clk),
-    .iaddr(pc),
-    .inst(inst),
     .write_enable(mem_write),
     .addr(mem_addr),
     .data_in(mem_in),
     .data_out(mem_out),
+    // instruction access
+    .iaddr(pc),
+    .inst(inst),
+    // peripheral pins
     .gpio(gpio),
     .uart_txd(uart_txd)
   );
