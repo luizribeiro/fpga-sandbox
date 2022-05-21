@@ -169,8 +169,8 @@ module riscv (
         `ALU_OR: alu_ans <= a | b;
         `ALU_AND: alu_ans <= a & b;
         `ALU_SLL: alu_ans <= a << b;
-        `ALU_SLTS: alu_ans <= {(`WORD)'b0, $signed(a) > $signed(b)};
-        `ALU_SLTU: alu_ans <= {(`WORD)'b0, a > b};
+        `ALU_SLTS: alu_ans <= {{`WORD{1'b0}}, $signed(a) > $signed(b)};
+        `ALU_SLTU: alu_ans <= {{`WORD{1'b0}}, a > b};
         `ALU_SRL: alu_ans <= a >> b;
         `ALU_SRA: alu_ans <= a >>> b;
       endcase
