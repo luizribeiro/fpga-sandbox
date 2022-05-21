@@ -66,7 +66,7 @@ module memory_controller (
   input wire [2:0] write_enable,
   input wire [31:0] addr,
   input wire [31:0] data_in,
-  inout wire [`MAX_GPIO:0] gpio,
+  inout wire [`LAST_GPIO:0] gpio,
   output wire uart_txd,
   output wire [31:0] data_out,
   output wire [31:0] inst

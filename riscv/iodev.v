@@ -7,11 +7,11 @@ module iodev (
   input wire [23:0] addr,
   input wire [31:0] data_in,
   output wire [31:0] data_out,
-  inout wire [`MAX_GPIO:0] gpio_port,
+  inout wire [`LAST_GPIO:0] gpio_port,
   output wire uart_txd
 );
-  reg [`MAX_GPIO:0] r_gpio;
-  reg [`MAX_GPIO:0] gpio_dir = {(`MAX_GPIO+1){1'b1}};
+  reg [`LAST_GPIO:0] r_gpio;
+  reg [`LAST_GPIO:0] gpio_dir = {(`NUM_GPIO){1'b1}};
 
   wire uart_tx_busy;
   uart uart (
@@ -26,10 +26,10 @@ module iodev (
 
   assign data_out = en ? (
     addr[3:0] == 4'h1
-    ? {{(32-`MAX_GPIO-1){1'b0}}, gpio_dir}
+    ? {{(32-`NUM_GPIO){1'b0}}, gpio_dir}
     : (
       addr[3:0] == 4'h0
-      ? {{(32-`MAX_GPIO-1){1'b0}}, r_gpio}
+      ? {{(32-`NUM_GPIO){1'b0}}, r_gpio}
       : (
         addr[3:0] == 4'h3
         ? {31'b0, uart_tx_busy}
@@ -41,7 +41,7 @@ module iodev (
   generate
     genvar i;
 
-    for (i = 0; i <= `MAX_GPIO; i = i+1) begin
+    for (i = 0; i < `NUM_GPIO; i = i+1) begin
       assign gpio_port[i] = gpio_dir[i] ? r_gpio[i] : 1'bz;
 
       always @(posedge clk) if (en) begin
