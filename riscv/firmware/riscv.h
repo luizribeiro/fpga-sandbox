@@ -3,7 +3,7 @@
 
 extern unsigned char __iodev_begin;
 
-#define IODEV(addr) (*(unsigned char *)&__iodev_begin + addr)
+#define IODEV(addr) (*((unsigned char *)&__iodev_begin + addr))
 
 // GPIO
 #define GPIO IODEV(0x0)
