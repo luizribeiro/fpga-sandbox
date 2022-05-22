@@ -24,19 +24,17 @@ module iodev (
     .uart_tx_busy(uart_tx_busy)
   );
 
-  assign data_out = en ? (
-    addr[3:0] == 4'h1
-    ? {{(32-`NUM_GPIO){1'b0}}, gpio_dir}
-    : (
-      addr[3:0] == 4'h0
-      ? {{(32-`NUM_GPIO){1'b0}}, r_gpio}
-      : (
-        addr[3:0] == 4'h3
-        ? {31'b0, uart_tx_busy}
-        : 'hzz
-      )
-    )
-  ) : 'hzz;
+  assign data_out = f_out(en, addr[3:0]);
+  function [31:0] f_out(input en, input [3:0] addr);
+    if (en) begin
+      casez (addr)
+        4'h1: f_out = {{(32-`NUM_GPIO){1'b0}}, gpio_dir};
+        4'h0: f_out = {{(32-`NUM_GPIO){1'b0}}, r_gpio};
+        4'h3: f_out = {31'b0, uart_tx_busy};
+        default: f_out = 'hzz;
+      endcase
+    end else f_out = 'hzz;
+  endfunction
 
   generate
     genvar i;
