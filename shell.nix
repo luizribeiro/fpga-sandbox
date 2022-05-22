@@ -7,6 +7,8 @@ in
 pkgs.mkShell {
   packages = [
     apio
+    minicom
+    picocom
     riscv32.buildPackages.binutils
     riscv32.buildPackages.gcc
   ] ++ lib.optionals (!stdenv.isDarwin) [
@@ -14,4 +16,9 @@ pkgs.mkShell {
   ];
 
   NIX_LD = lib.fileContents "${stdenv.cc}/nix-support/dynamic-linker";
+
+  shellHook = ''
+    # this creates issues for cross-compiling into riscv32
+    unset NIX_CFLAGS_COMPILE
+  '';
 }
