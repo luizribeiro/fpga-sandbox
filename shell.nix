@@ -9,6 +9,7 @@ pkgs.mkShell {
     apio
     riscv32.buildPackages.binutils
     riscv32.buildPackages.gcc
+  ] ++ lib.optionals (!stdenv.isDarwin) [
     usbutils
   ];
 
