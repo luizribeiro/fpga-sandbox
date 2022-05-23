@@ -15,4 +15,5 @@ upload: hardware.bin
 
 clean:
 	$(MAKE) -C firmware/ clean
-	rm hardware.{asc,bin,json}
+	rm -f hardware.{asc,bin,json}
+	rm -f top_tb.{vcd,out}
