@@ -35,6 +35,7 @@ module tb();
       cpu.imc.rom.mem[i] = 32'b0;
     cpu.imc.rom.mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
     cpu.imc.rom.mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
+    // FIXME: these are reading/storing from ROM instead of RAM :(
     cpu.imc.rom.mem[2] = {7'h0, 5'h1, 5'h0, `SW, 5'h0, `STORE}; // sw x1, 0(x0)
     cpu.imc.rom.mem[3] = {12'h0, 5'd0, `LW, 5'd3, `LOAD}; // lw x3, 0(x0)
     cpu.imc.rom.mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
