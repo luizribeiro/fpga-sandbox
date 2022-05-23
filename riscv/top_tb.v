@@ -34,10 +34,9 @@ module tb();
     for (i = 0; i <= 1023; i++)
       cpu.imc.rom.mem[i] = 32'b0;
     cpu.imc.rom.mem[0] = {20'h1f, 5'd1, `LUI}; // lui x1, 0x1f
-    cpu.imc.rom.mem[1] = {20'hf1, 5'd2, `LUI}; // lui x2, 0xf1
-    // FIXME: these are reading/storing from ROM instead of RAM :(
-    cpu.imc.rom.mem[2] = {7'h0, 5'h1, 5'h0, `SW, 5'h0, `STORE}; // sw x1, 0(x0)
-    cpu.imc.rom.mem[3] = {12'h0, 5'd0, `LW, 5'd3, `LOAD}; // lw x3, 0(x0)
+    cpu.imc.rom.mem[1] = {20'h10000, 5'd2, `LUI}; // lui x2, 0x10000
+    cpu.imc.rom.mem[2] = {7'h0, 5'h1, 5'h2, `SW, 5'h0, `STORE}; // sw x1, 0(x2)
+    cpu.imc.rom.mem[3] = {12'h0, 5'h2, `LW, 5'd3, `LOAD}; // lw x3, 0(x2)
     cpu.imc.rom.mem[31] = {12'h00, 5'd0, 3'b0, 5'd0, `JALR}; // jalr x0, x0(0x00)
 
     `assert(cpu.stage == 'b00001, "Expected stage 1");
@@ -67,8 +66,8 @@ module tb();
     `assert(cpu.pc == 'h08, "Expected PC=0x08");
     `assert(cpu.opcode == `LUI, "Expected LUI opcode @ PC=0x01");
     `assert(
-      (cpu.regs[2] == {20'hf1, 12'h00}),
-      "x2's 20 upper bits should be loaded with 0xf1"
+      (cpu.regs[2] == 'h10000000),
+      "x2's 20 upper bits should be loaded with 0x10000000 (RAM base address)"
     );
 
     repeat(5 * CYCLES) @(negedge clk);
